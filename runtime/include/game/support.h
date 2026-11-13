@@ -49,6 +49,15 @@ extern "C" {
    definition as BOARD_ORIGINAL(name), which keeps the original as original_name */
 #define BOARD_ORIGINAL(name) original_##name
 
+/* A game function a port's console build (console/, SIMPSONS_CONSOLE) puts its own in place of (console/replaced.txt):
+   tools/decompile.py writes its definition as CONSOLE_ORIGINAL(name), which is original_name there, for the
+   console's to call, and the game's own name in every other build */
+#ifdef SIMPSONS_CONSOLE
+#define CONSOLE_ORIGINAL(name) original_##name
+#else
+#define CONSOLE_ORIGINAL(name) name
+#endif
+
 /* ---- the work RAM ---- */
 
 #define RAM8(address)   (*(uint8_t *)simpsons_work_ram_at((uint16_t)(address), 1u))

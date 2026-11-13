@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The launcher's icon from Android 8 on: the project's picture (ic_launcher_art, Homer at the window, the one
+     Sebas chose for Android and its handhelds) whole in the 72 dp of the 108 the launcher shows, its shape cutting
+     the corners; a picture of the player's own takes its place (ic_launcher_own.xml, the
+     same, as Simpsons APK and android.cmake put it). As tmnt-port's -->
+<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+	<background>
+		<inset android:drawable="@mipmap/ic_launcher_art" android:inset="18dp" />
+	</background>
+	<foreground android:drawable="@android:color/transparent" />
+</adaptive-icon>

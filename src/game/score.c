@@ -3,7 +3,7 @@
  *    Description: the players' scores and the high score table
  *    Version:     0.1.0
  *    Created:     06-11-2026
- *    Modified:    11-11-2026
+ *    Modified:    13-11-2026
  *    Author:      Sebastian Toyos
  *
  *    The Simpsons (arcade, Konami 1991): the game's 053248 program decompiled into C by
@@ -74,7 +74,7 @@ void high_score_rank(uint16_t *p_score, uint32_t *p_in_high_scores)
 }
 
 /* Puts the initials and score at 48F0 into the high score table at place A, moving the lower ones down. */
-uint16_t insert_high_score(uint16_t place)
+uint16_t CONSOLE_ORIGINAL(insert_high_score)(uint16_t place)
 {
 	uint8_t insert_place = 0;
 	uint16_t new_entry = 0, record_place = 0;

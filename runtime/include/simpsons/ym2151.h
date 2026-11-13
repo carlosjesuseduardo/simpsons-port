@@ -4,7 +4,7 @@
  *                 timers
  *    Version:     0.1.0
  *    Created:     06-11-2026
- *    Modified:    06-11-2026
+ *    Modified:    13-11-2026
  *    Author:      Sebastian Toyos
  *
  *    license:BSD-3-Clause
@@ -14,7 +14,8 @@
  *    gets the timers through set_timer (clocks to wait, -1 to stop) and says when one runs out.
  *
  *    On this board it runs on the sound board's 3.579545 MHz (SIMPSONS_SOUND_CLOCK), its IRQ goes nowhere,
- *    and only its first (left) output is heard: simpsons.cpp routes it to both sides of the speaker at 0.5.
+ *    and only its first (left) output is heard: simpsons.cpp routes it to both sides of the speaker at 0.5 (The
+ *    Simpsons' SOUND: STEREO puts its second on the right side: sound_board.h's simpsons_sound_stereo).
  *    It is the same chip as TMNT's, and the same code (the TMNT decompilation's runtime/src/ym2151.c).
  */
 #ifndef SIMPSONS_YM2151_H

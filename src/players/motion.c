@@ -3,7 +3,7 @@
  *    Description: a player's motion against walls, floors, the screen's edges and the scroll, and helpers on its speeds and partner
  *    Version:     0.1.0
  *    Created:     06-11-2026
- *    Modified:    11-11-2026
+ *    Modified:    13-11-2026
  *    Author:      Sebastian Toyos
  *
  *    The Simpsons (arcade, Konami 1991): the game's 053248 program decompiled into C by
@@ -14,7 +14,7 @@
 /* Stops the player's (and its partner's) x or y speed where the next place is past the back line, the
    screen's edge, a wall or a floor too high, takes the floor it stands on and its priority, and keeps
    its life in its record. */
-void player_check_motion(uint16_t player)
+void CONSOLE_ORIGINAL(player_check_motion)(uint16_t player)
 {
 	uint32_t floor_at_height = 0, floor_below_height = 0, floor_compare_overflow = 0, carry = 0;
 	uint8_t floor_high = 0, floor_low = 0, floor_value = 0, next_x_high = 0, next_x_low = 0;
@@ -476,7 +476,7 @@ void player_team_follow(uint16_t partner, uint16_t player)
 
 /* Checks the player's next x against the screen's edges and the floor ahead: stops it with carry where
    it can not go, else takes that floor. */
-void player_check_screen_edges(uint16_t player, uint32_t *p_no_crash, uint32_t *p_carry)
+void CONSOLE_ORIGINAL(player_check_screen_edges)(uint16_t player, uint32_t *p_no_crash, uint32_t *p_carry)
 {
 	uint32_t no_crash = *p_no_crash;
 	uint32_t carry = *p_carry;

@@ -1,0 +1,548 @@
+# Name:        build.yml
+# Description: builds the games on clean machines with no ROM set (Windows with MSVC, Linux, macOS for Apple silicon
+#              and Intel), SDL2 and the C runtime inside the executables, and packs what a player runs: the
+#              computers' packages, The Simpsons Arcade and The Simpsons (the console version) alone, which make
+#              their assets pack out of the player's ROM set on their first run, with their README and the licenses
+#              (on macOS The Simpsons Arcade in a package of its own); and a package for each device (as
+#              tmnt-port's: the job devices, ports/pack_devices.py), its games without assets beside the tool that
+#              makes the player's of them for Windows, macOS and Linux (Simpsons NSP, Simpsons APK, Simpsons
+#              Anbernic, from the computers' kits): the Switch's .nsp pieces (its job, devkitPro's image) and its
+#              .nro, Android's base APKs (its job, the runner's SDK and NDK) and those signed with the project's key,
+#              Anbernic's PORTS (its job, Zig), iOS's unsigned .ipa (its job, Xcode; no tool: the player's
+#              sideloading tool signs them). The devices' games also take the assets out of the player's
+#              simpsons.zip on the device. The Simulator's job builds the iOS apps for it and starts them there (no
+#              ROM set: each must say so). On a tag v*, the release with the packages and docs/releases/<tag>.md as
+#              its notes. On a push to the branch testing, the pre-release testing (its tag testing-build): the next
+#              release's changes for the players to try, made again at each push, never the latest release, The
+#              Simpsons' OPTIONS showing V<version>-TEST<the run's number>. It runs on main, testing, main's pull
+#              requests and the tags, and by hand on any branch (ports/PLAN.md, E). As tmnt-port's
+# Version:     0.2.0
+# Created:     13-11-2026
+# Modified:    13-11-2026
+# Author:      Sebastian Toyos
+name: build
+
+on:
+  push:
+    branches: [main, testing]
+    tags: ['v*']
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+# The Simpsons' version in OPTIONS (CMakeLists.txt): the testing branch's builds say which run made them
+env:
+  SIMPSONS_VERSION_SUFFIX: ${{ github.ref == 'refs/heads/testing' && format('-TEST{0}', github.run_number) || '' }}
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: linux-x64
+            os: ubuntu-24.04
+          - name: macos-universal
+            os: macos-15    # (the .apps for macOS 11 on)
+          - name: windows-x64
+            os: windows-2022
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    steps:
+      # (tools/core, the shared core, holds ymfm's license, which the package carries)
+      - uses: actions/checkout@v7
+        with:
+          submodules: true
+
+      # SDL2 is built from its source (SIMPSONS_STATIC_SDL2): on Linux it needs the headers of what it talks to (it
+      # loads the libraries themselves when the game runs). The reference tools, built on MAME's code, are
+      # development tools: not in a player's package
+      - name: Tools (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ninja-build libasound2-dev libpulse-dev libx11-dev libxext-dev \
+            libxrandr-dev libxcursor-dev libxi-dev libxinerama-dev libxss-dev libxkbcommon-dev \
+            libwayland-dev wayland-protocols libegl1-mesa-dev libgl1-mesa-dev libudev-dev libdbus-1-dev
+
+      - name: Tools (macOS)
+        if: runner.os == 'macOS'
+        run: brew install ninja
+
+      - name: Configure (Linux)
+        if: runner.os == 'Linux'
+        run: cmake -S . -B build/cmake -G Ninja -DCMAKE_BUILD_TYPE=Release -DSIMPSONS_REFERENCE_TOOLS=OFF -DSIMPSONS_STATIC_SDL2=ON
+
+      - name: Configure (macOS, Apple silicon and Intel)
+        if: runner.os == 'macOS'
+        run: cmake -S . -B build/cmake -G Ninja -DCMAKE_BUILD_TYPE=Release -DSIMPSONS_REFERENCE_TOOLS=OFF -DSIMPSONS_STATIC_SDL2=ON "-DCMAKE_OSX_ARCHITECTURES=arm64;x86_64" -DCMAKE_OSX_DEPLOYMENT_TARGET=11.0
+
+      - name: Configure (Windows)
+        if: runner.os == 'Windows'
+        run: cmake -S . -B build/cmake -DSIMPSONS_REFERENCE_TOOLS=OFF -DSIMPSONS_STATIC_SDL2=ON
+
+      - name: Build
+        run: cmake --build build/cmake --config Release --parallel
+
+      # what a player runs (no headless runs, no build leftovers, no devices' tools), as the build packs it locally
+      # on Windows (simpsons_package, CMakeLists.txt): the folder simpsons with The Simpsons Arcade and The Simpsons
+      # (the .apps on macOS, signed ad hoc: with no certificate macOS offers to open them anyway, where a bundle
+      # signed in part is "damaged"), their pictures beside them on Linux, the package's README.txt, the project's
+      # LICENSE.txt and licenses/ (MAME's and ymfm's: the board's video and sound follow their behavior and tables;
+      # SDL2's and SDL_GameControllerDB's, zlib; Kenney's, CC0: the first run's letters, the controls' pictures).
+      # Linux's in a tar of our own: the artifacts' zip loses the executables' permissions
+      - name: Pack (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          cmake --build build/cmake --config Release --target simpsons_package
+          New-Item -ItemType Directory -Force dist | Out-Null
+          Copy-Item build/cmake/package/simpsons-windows-x64.zip dist/
+
+      - name: Pack (Linux, macOS)
+        if: runner.os != 'Windows'
+        shell: bash
+        run: |
+          mkdir -p dist/simpsons/licenses
+          for file in build/bin/*; do
+            case "$(basename "$file")" in
+              *headless*|*assets_check*|kref*|oracle*|konami_ops_check*|*.a|assets|*.ini|*.assets|*.nv|*.log) ;;
+              "Simpsons NSP"*|"Simpsons APK"*|"Simpsons Anbernic"*|switch|switch-nro|android|anbernic|ios) ;;
+              *) cp -R "$file" dist/simpsons/ ;;
+            esac
+          done
+          cp LICENSE dist/simpsons/LICENSE.txt
+          cp docs/package/README.txt dist/simpsons/README.txt
+          cp docs/package/licenses/MAME.txt dist/simpsons/licenses/MAME.txt
+          cp tools/core/konami/reference/ymfm/LICENSE dist/simpsons/licenses/ymfm.txt
+          cp build/cmake/_deps/sdl2-src/LICENSE.txt dist/simpsons/licenses/SDL2.txt
+          cp ports/sdl2/controllerdb/LICENSE dist/simpsons/licenses/SDL_GameControllerDB.txt
+          cp ports/sdl2/font/License.txt dist/simpsons/licenses/Kenney-Mini.txt
+          cp ports/sdl2/prompts/License.txt dist/simpsons/licenses/Kenney-Input-Prompts.txt
+          if [ "$RUNNER_OS" = macOS ]; then
+            for app in dist/simpsons/*.app; do
+              codesign --force --deep --sign - "$app"
+              codesign --verify --deep --strict --verbose=2 "$app"
+              lipo -info "$app/Contents/MacOS/$(basename "$app" .app)"
+            done
+            # The Simpsons Arcade in a package of its own, with the README and the licenses: a launcher that installs
+            # a release's macOS package takes its first .app and leaves the other out (tmnt-port's issue 7)
+            mkdir -p dist/simpsons-arcade
+            mv "dist/simpsons/The Simpsons Arcade.app" dist/simpsons-arcade/
+            cp -R dist/simpsons/licenses dist/simpsons/LICENSE.txt dist/simpsons/README.txt dist/simpsons-arcade/
+            ls -la dist/simpsons-arcade
+          fi
+          ls -la dist/simpsons dist/simpsons/licenses
+          cd dist
+          case "$RUNNER_OS" in
+            Linux) tar czf simpsons-${{ matrix.name }}.tar.gz simpsons ;;
+            macOS)
+              ditto -c -k --keepParent simpsons simpsons-${{ matrix.name }}.zip
+              ditto -c -k --keepParent simpsons-arcade simpsons-arcade-${{ matrix.name }}.zip
+              ;;
+          esac
+
+      # this computer's kit for the devices' packages (the job devices): the devices' tools (Simpsons NSP, Simpsons
+      # APK, Simpsons Anbernic: plain programs, the .exe on Windows), font.bmp (their letters), the project's
+      # LICENSE.txt and the licenses (the games' own and the tools'), in a tar, which keeps the programs' permissions
+      - name: Kit
+        shell: bash
+        run: |
+          mkdir -p dist/kit/licenses
+          for tool in "Simpsons NSP" "Simpsons APK" "Simpsons Anbernic"; do
+            if [ -f "build/bin/$tool.exe" ]; then cp "build/bin/$tool.exe" dist/kit/; else cp "build/bin/$tool" dist/kit/; fi
+          done
+          cp ports/sdl2/font/font.bmp dist/kit/
+          cp LICENSE dist/kit/LICENSE.txt
+          cp docs/package/licenses/MAME.txt dist/kit/licenses/MAME.txt
+          cp tools/core/konami/reference/ymfm/LICENSE dist/kit/licenses/ymfm.txt
+          cp build/cmake/_deps/sdl2-src/LICENSE.txt dist/kit/licenses/SDL2.txt
+          cp ports/sdl2/controllerdb/LICENSE dist/kit/licenses/SDL_GameControllerDB.txt
+          cp ports/sdl2/font/License.txt dist/kit/licenses/Kenney-Mini.txt
+          cp ports/sdl2/prompts/License.txt dist/kit/licenses/Kenney-Input-Prompts.txt
+          ls -la dist/kit dist/kit/licenses
+          cd dist && tar czf simpsons-${{ matrix.name }}-kit.tar.gz kit
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: simpsons-${{ matrix.name }}
+          path: |
+            dist/simpsons-${{ matrix.name }}.*
+            dist/simpsons-arcade-${{ matrix.name }}.*
+            dist/simpsons-${{ matrix.name }}-kit.tar.gz
+
+  # The Nintendo Switch: The Simpsons' and The Simpsons Arcade's .nsp pieces (main, main.npdm, control.nacp, icon.jpg
+  # each: build/bin/switch/simpsons and simpsons-arcade), with devkitPro's toolchain in its own image, and their .nro
+  # without an assets pack (build/bin/switch-nro), which take the assets out of the player's simpsons.zip in
+  # sdmc:/switch/simpsons/ at their first start. The HOME menu's icon is the repository's (ports/switch/icon.jpg)
+  switch:
+    name: switch
+    runs-on: ubuntu-24.04
+    container: devkitpro/devkita64:latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          submodules: true
+
+      - name: Configure
+        run: /opt/devkitpro/portlibs/switch/bin/aarch64-none-elf-cmake -S . -B build/switch -DCMAKE_BUILD_TYPE=Release -DSIMPSONS_REFERENCE_TOOLS=OFF
+
+      - name: Build
+        run: cmake --build build/switch --target simpsons_switch_games --parallel
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: simpsons-switch
+          path: build/bin/switch/
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: simpsons-switch-nro
+          path: build/bin/switch-nro/*.nro
+
+  # Android: The Simpsons' and The Simpsons Arcade's base APKs, without an assets pack or a signature
+  # (build/bin/android/*-base.apk; arm64-v8a and armeabi-v7a in each), with the NDK and the SDK's tools of the
+  # runner's Android SDK and its Java 17 (ports/android/android.cmake; the icons and the TV banner the repository's,
+  # ports/android/res); and the same signed with the project's key, the same at every release so that a new one
+  # installs over the last (the repository's secrets ANDROID_KEYSTORE, the keystore in base64, and
+  # ANDROID_KEYSTORE_PASSWORD, its key's alias simpsons; without them none: no key is ever in the repository), which
+  # take the assets out of the player's simpsons.zip in the app's folder at their first start. The build's own debug
+  # APKs (a key keytool makes on the runner) stay there
+  android:
+    name: android
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          submodules: true
+
+      - name: Tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ninja-build
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --install "platforms;android-35" "build-tools;35.0.1" > /dev/null
+
+      - name: Configure
+        run: |
+          export JAVA_HOME="$JAVA_HOME_17_X64"
+          cmake -S . -B build/android -G Ninja -DCMAKE_BUILD_TYPE=Release -DSIMPSONS_REFERENCE_TOOLS=OFF \
+            -DCMAKE_TOOLCHAIN_FILE="$ANDROID_NDK_LATEST_HOME/build/cmake/android.toolchain.cmake" \
+            -DANDROID_ABI=arm64-v8a -DANDROID_PLATFORM=android-24
+
+      - name: Build
+        run: |
+          export JAVA_HOME="$JAVA_HOME_17_X64"
+          cmake --build build/android --target simpsons_apks --parallel
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: simpsons-android
+          path: build/bin/android/*-base.apk
+
+      - name: Sign
+        env:
+          KEYSTORE: ${{ secrets.ANDROID_KEYSTORE }}
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+        run: |
+          if [ -z "$KEYSTORE" ]; then
+            echo "No ANDROID_KEYSTORE secret: no signed APKs (the Android package has the tool's way alone)"
+            exit 0
+          fi
+          export JAVA_HOME="$JAVA_HOME_17_X64"
+          apksigner="$ANDROID_HOME/build-tools/35.0.1/apksigner"
+          echo "$KEYSTORE" | base64 -d > "$RUNNER_TEMP/release.keystore"
+          ready=build/bin/android-ready
+          mkdir -p $ready
+          "$apksigner" sign --ks "$RUNNER_TEMP/release.keystore" --ks-pass env:KEYSTORE_PASSWORD \
+            --ks-key-alias simpsons --key-pass env:KEYSTORE_PASSWORD --out "$ready/The Simpsons.apk" \
+            build/bin/android/simpsons-base.apk
+          "$apksigner" sign --ks "$RUNNER_TEMP/release.keystore" --ks-pass env:KEYSTORE_PASSWORD \
+            --ks-key-alias simpsons --key-pass env:KEYSTORE_PASSWORD --out "$ready/The Simpsons Arcade.apk" \
+            build/bin/android/simpsons-arcade-base.apk
+          rm -f "$RUNNER_TEMP/release.keystore" $ready/*.idsig
+          "$apksigner" verify --verbose "$ready/The Simpsons.apk" "$ready/The Simpsons Arcade.apk"
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: simpsons-android-ready
+          path: build/bin/android-ready/*.apk
+          if-no-files-found: ignore
+
+  # Anbernic's H700 handhelds: PORTS's files without the assets (build/bin/anbernic), built with Zig for the stock
+  # firmware's glibc and against its SDL2 (SDL's headers from its source; ports/anbernic/anbernic.cmake); as they
+  # are, the card's Roms/PORTS, whose games take the assets out of the player's simpsons.zip in PORTS/simpsons/
+  anbernic:
+    name: anbernic
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          submodules: true
+
+      - name: Tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ninja-build
+          mkdir -p build/downloads/zig build/downloads/sdl2-source
+          curl -fsSL https://ziglang.org/download/0.17.0/zig-x86_64-linux-0.17.0.tar.xz | tar xJ -C build/downloads/zig
+          curl -fsSL https://github.com/libsdl-org/SDL/releases/download/release-2.32.10/SDL2-2.32.10.tar.gz \
+            | tar xz -C build/downloads/sdl2-source
+
+      - name: Configure
+        run: |
+          cmake -S . -B build/anbernic -G Ninja -DCMAKE_BUILD_TYPE=Release -DSIMPSONS_REFERENCE_TOOLS=OFF \
+            -DCMAKE_TOOLCHAIN_FILE=ports/anbernic/zig_aarch64.cmake -DSIMPSONS_ANBERNIC=ON \
+            -DSIMPSONS_SDL2_INCLUDE="$PWD/build/downloads/sdl2-source/SDL2-2.32.10/include"
+
+      - name: Build
+        run: cmake --build build/anbernic --target simpsons_anbernic_games --parallel
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: simpsons-anbernic
+          path: build/bin/anbernic/
+
+  # iOS and iPadOS: The Simpsons' and The Simpsons Arcade's apps for an iPhone or an iPad (arm64), with Xcode through
+  # CMake's Xcode generator and SDL2 from its source (ports/ios/ios.cmake; the icon the repository's, Homer at the
+  # window), not signed (no key nor team: the player's sideloading tool signs them), each an .ipa with no assets
+  # (build/bin/ios), which takes the assets out of the player's simpsons.zip in its Documents folder at its first start.
+  # Read back: the Info.plist's keys (the identifiers, the Files app's, the orientations, the controllers', the icon),
+  # the executable arm64 for iOS, the bundle's resources, the .ipa's entries
+  ios:
+    name: ios
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          submodules: true
+
+      - name: Configure
+        run: |
+          xcodebuild -version
+          cmake -S . -B build/ios -G Xcode -DCMAKE_SYSTEM_NAME=iOS -DCMAKE_OSX_ARCHITECTURES=arm64 \
+            -DCMAKE_OSX_DEPLOYMENT_TARGET=13.0 -DSIMPSONS_REFERENCE_TOOLS=OFF
+
+      - name: Build
+        run: cmake --build build/ios --config Release --target simpsons_ios_games -- CODE_SIGNING_ALLOWED=NO
+
+      - name: Check
+        run: |
+          for game in "The Simpsons" "The Simpsons Arcade"; do
+            app="build/bin/ios/$game.app"
+            plist="$app/Info.plist"
+            plutil -lint "$plist"
+            plutil -p "$plist"
+            for key in CFBundleIdentifier CFBundleExecutable MinimumOSVersion UIDeviceFamily UIFileSharingEnabled \
+              LSSupportsOpeningDocumentsInPlace UISupportedInterfaceOrientations UILaunchStoryboardName \
+              UIRequiresFullScreen GCSupportedGameControllers CFBundleIcons; do
+              plutil -extract "$key" xml1 -o - "$plist" > /dev/null || { echo "$game: no $key in Info.plist"; exit 1; }
+            done
+            lipo -info "$app/$game"
+            otool -l "$app/$game" | grep -A4 LC_BUILD_VERSION
+            otool -l "$app/$game" | grep -A2 LC_BUILD_VERSION | grep -Eq "platform (2|IOS)$" || { echo "$game: not iOS's"; exit 1; }
+            for resource in font.bmp input_prompts.bmp LaunchScreen.storyboardc Assets.car; do
+              [ -e "$app/$resource" ] || { echo "$game: no $resource in the app"; exit 1; }
+            done
+            ls -la "$app"
+            unzip -l "build/bin/ios/$game.ipa"
+            unzip -l "build/bin/ios/$game.ipa" | grep -q "Payload/$game.app/$game\$" || { echo "$game.ipa: no app"; exit 1; }
+            if unzip -l "build/bin/ios/$game.ipa" | grep -E '\.assets$|\.zip$'; then echo "$game.ipa: assets in it"; exit 1; fi
+          done
+          plutil -extract CFBundleIdentifier raw -o - "build/bin/ios/The Simpsons.app/Info.plist" | grep -qx io.github.cheviman.simpsons
+          plutil -extract CFBundleIdentifier raw -o - "build/bin/ios/The Simpsons Arcade.app/Info.plist" | grep -qx io.github.cheviman.simpsons.arcade
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: simpsons-ios
+          path: build/bin/ios/*.ipa
+
+  # The iOS apps built for the Simulator (arm64, its own build folder) and started there, one after the other, with no
+  # ROM set: each must start, write its log in its Documents folder and say there where to put simpsons.zip. A
+  # screenshot of each (its message) in the artifact ios-simulator-screens. A check: the release does not wait for it
+  ios-simulator:
+    name: ios-simulator
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          submodules: true
+
+      - name: Configure
+        run: |
+          cmake -S . -B build/ios-simulator -G Xcode -DCMAKE_SYSTEM_NAME=iOS -DCMAKE_OSX_SYSROOT=iphonesimulator \
+            -DCMAKE_OSX_ARCHITECTURES=arm64 -DCMAKE_OSX_DEPLOYMENT_TARGET=13.0 -DSIMPSONS_REFERENCE_TOOLS=OFF \
+            -DSIMPSONS_BIN_DIR="$PWD/build/bin-ios-simulator"
+
+      - name: Build
+        run: cmake --build build/ios-simulator --config Release --target simpsons_ios_games -- CODE_SIGNING_ALLOWED=NO
+
+      - name: Start in the Simulator
+        run: |
+          device=$(xcrun simctl list devices available -j | python3 -c '
+          import json, sys
+          runtimes = json.load(sys.stdin)["devices"]
+          phones = [device["udid"] for runtime in sorted(runtimes, reverse=True) if ".iOS-" in runtime
+                    for device in runtimes[runtime] if device["name"].startswith("iPhone")]
+          print(phones[0])')
+          echo "Simulator: $device"
+          xcrun simctl boot "$device"
+          xcrun simctl bootstatus "$device" -b
+          mkdir -p screens
+          for game in "The Simpsons Arcade:io.github.cheviman.simpsons.arcade:simpsons-arcade" \
+            "The Simpsons:io.github.cheviman.simpsons:simpsons"; do
+            IFS=: read -r name identifier log <<< "$game"
+            xcrun simctl install "$device" "build/bin-ios-simulator/ios/$name.app"
+            xcrun simctl launch "$device" "$identifier"
+            data=$(xcrun simctl get_app_container "$device" "$identifier" data)
+            for second in $(seq 90); do
+              grep -q "No ROM set" "$data/Documents/$log.log" 2>/dev/null && break
+              sleep 1
+            done
+            sleep 3
+            xcrun simctl io "$device" screenshot "screens/$log.png"
+            cat "$data/Documents/$log.log"
+            grep -q "No ROM set" "$data/Documents/$log.log" || { echo "$name: no message in its log"; exit 1; }
+            xcrun simctl terminate "$device" "$identifier" || true
+          done
+
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: ios-simulator-screens
+          path: screens/
+          if-no-files-found: ignore
+
+  # The devices' packages (ports/pack_devices.py): simpsons-switch.zip, simpsons-android.zip and simpsons-anbernic.zip,
+  # each the device's games beside its tool for Windows, macOS and Linux (the computers' kits), font.bmp, the licenses
+  # and its README (docs/package/README-*.txt); and ready for the device: the Switch's .nro in sd/, Android's signed
+  # APKs in ready/ (when the repository has the key), Anbernic's folder as the card's PORTS; and simpsons-ios.zip, the
+  # two .ipa with their README and the licenses
+  devices:
+    name: devices
+    runs-on: ubuntu-24.04
+    needs: [build, switch, android, anbernic, ios]
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/download-artifact@v8
+        with:
+          name: simpsons-switch
+          path: devices/switch
+
+      - uses: actions/download-artifact@v8
+        with:
+          name: simpsons-switch-nro
+          path: devices/switch-nro
+
+      - uses: actions/download-artifact@v8
+        with:
+          name: simpsons-android
+          path: devices/android
+
+      - uses: actions/download-artifact@v8
+        continue-on-error: true    # (none without the project's key)
+        with:
+          name: simpsons-android-ready
+          path: devices/android-ready
+
+      - uses: actions/download-artifact@v8
+        with:
+          name: simpsons-anbernic
+          path: devices/anbernic
+
+      - uses: actions/download-artifact@v8
+        with:
+          name: simpsons-ios
+          path: devices/ios
+
+      - uses: actions/download-artifact@v8
+        with:
+          name: simpsons-windows-x64
+          path: computers/windows-x64
+
+      - uses: actions/download-artifact@v8
+        with:
+          name: simpsons-macos-universal
+          path: computers/macos-universal
+
+      - uses: actions/download-artifact@v8
+        with:
+          name: simpsons-linux-x64
+          path: computers/linux-x64
+
+      - name: Pack
+        run: |
+          for computer in windows-x64 macos-universal linux-x64; do
+            mkdir -p "kits/$computer"
+            tar xzf "computers/$computer/simpsons-$computer-kit.tar.gz" -C "kits/$computer"
+          done
+          python3 ports/pack_devices.py --kits kits --switch devices/switch --switch-nro devices/switch-nro \
+            --android devices/android --android-ready devices/android-ready --anbernic devices/anbernic \
+            --ios devices/ios --out dist
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: simpsons-devices
+          path: dist/simpsons-*.zip
+
+  # A tag v*: the release, the computers' four packages and the devices' four, and its notes (docs/releases/<tag>.md,
+  # written before the tag)
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [build, devices]
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: simpsons-*
+          path: dist
+          merge-multiple: true
+
+      - name: Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          ls -la dist
+          gh release create "$GITHUB_REF_NAME" --verify-tag --title "The Simpsons $GITHUB_REF_NAME" \
+            --notes-file "docs/releases/$GITHUB_REF_NAME.md" \
+            dist/simpsons-windows-x64.zip dist/simpsons-linux-x64.tar.gz dist/simpsons-macos-universal.zip \
+            dist/simpsons-arcade-macos-universal.zip dist/simpsons-switch.zip dist/simpsons-android.zip \
+            dist/simpsons-anbernic.zip dist/simpsons-ios.zip
+
+  # A push to the branch testing: the pre-release testing, the next release's changes for the players to try, the
+  # same eight packages; made again at each push (the last one deleted, its tag testing-build with it, and made on
+  # this commit), never the latest release, so that what follows the latest (a launcher, the page's link) never
+  # takes it. Its notes: docs/releases/testing.md and the commit
+  testing:
+    if: github.ref == 'refs/heads/testing'
+    needs: [build, devices]
+    runs-on: ubuntu-24.04
+    concurrency:
+      group: testing-release
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: simpsons-*
+          path: dist
+          merge-multiple: true
+
+      - name: Pre-release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          ls -la dist
+          version=$(sed -n 's/^project(simpsons VERSION \([0-9.]*\).*/\1/p' CMakeLists.txt)$SIMPSONS_VERSION_SUFFIX
+          { cat docs/releases/testing.md; echo; echo "This one: V$version in The Simpsons' OPTIONS, from $GITHUB_SHA."; } > notes.md
+          gh release delete testing-build --cleanup-tag --yes || true
+          gh release create testing-build --prerelease --latest=false --target "$GITHUB_SHA" \
+            --title "The Simpsons testing (V$version)" --notes-file notes.md \
+            dist/simpsons-windows-x64.zip dist/simpsons-linux-x64.tar.gz dist/simpsons-macos-universal.zip \
+            dist/simpsons-arcade-macos-universal.zip dist/simpsons-switch.zip dist/simpsons-android.zip \
+            dist/simpsons-anbernic.zip dist/simpsons-ios.zip

@@ -5,7 +5,7 @@
  *                 assets, by name and by the addresses it keeps
  *    Version:     0.1.0
  *    Created:     06-11-2026
- *    Modified:    11-11-2026
+ *    Modified:    13-11-2026
  *    Author:      Sebastian Toyos
  *
  *    license:BSD-3-Clause
@@ -32,6 +32,7 @@
 #include "simpsons/frame.h"
 #include "simpsons/machine.h"
 #include "simpsons/program.h"
+#include "simpsons/state.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -49,6 +50,7 @@ void (*program_frame)(void);
 static uint32_t mask = CC_F | CC_I;     /* the CC's F and I: the reset sets both */
 static uint32_t interrupts;
 static bool tables_loaded;
+static uint32_t waiting_at;             /* the wait the program is in while the port has its frame (0: none) */
 
 /* ---- what the last code to run was (tools/decompile.py --trace): shown when the program stops ---- */
 /* With SIMPSONS_TRACE=FILE and SIMPSONS_TRACE_FRAMES=FIRST-LAST in the environment, a traced build also writes every
@@ -344,7 +346,16 @@ void frame_wait(uint32_t wait)
 {
 	simpsons_settle_shadow();    /* (what the program wrote through a pointer outside the work RAM, before the frame) */
 	if (simpsons_frame_idle((uint16_t)wait) && program_frame)
+	{
+		waiting_at = wait;
 		program_frame();
+		waiting_at = 0;
+	}
+}
+
+uint32_t program_waiting_at(void)
+{
+	return waiting_at;
 }
 
 /* ---- the program as a port runs it (simpsons/program.h) ---- */
@@ -380,4 +391,17 @@ uint32_t program_interrupts(void)
 bool program_irq_masked(void)
 {
 	return (mask & CC_I) != 0;
+}
+
+/* A save state's part (simpsons/state.h): the CC's mask, the interrupts taken, and what the code carries in its
+   registers (game_context). Taken where the program waits for its next frame in its main loop (game/state.h), where
+   the C has nothing of the program's on its stack that the board's memory does not say: the boot set it up and called
+   the loop, whose job it read before the wait is none (the wait is the queue's idle one) and is read again after it */
+void simpsons_program_state(simpsons_state *state)
+{
+	simpsons_state_part(state, "program");
+	simpsons_state_bytes(state, &mask, sizeof(mask));
+	simpsons_state_bytes(state, &interrupts, sizeof(interrupts));
+	for (size_t index = 0; index < game_context_count; index++)
+		simpsons_state_bytes(state, game_context[index], sizeof(*game_context[index]));
 }

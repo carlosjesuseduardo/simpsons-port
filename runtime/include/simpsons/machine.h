@@ -4,7 +4,7 @@
  *                 interrupts, the EEPROM, the video chips' memories and registers
  *    Version:     0.1.0
  *    Created:     05-11-2026
- *    Modified:    05-11-2026
+ *    Modified:    13-11-2026
  *    Author:      Sebastian Toyos
  *
  *    license:BSD-3-Clause
@@ -188,6 +188,11 @@ typedef struct
 } simpsons_machine;
 
 extern simpsons_machine simpsons_board;
+
+/* A port's: called when the ER5911's contents change (a cell written, or all of them erased), for the port to keep
+   them (simpsons_board.eeprom.data); unset, nothing is called. Apart from simpsons_board, which the board's reset
+   clears */
+extern void (*simpsons_eeprom_written)(void);
 
 /* The work RAM's 'size' bytes from 'address' as the host has them: the board keeps the work RAM the other way round
    (the byte at its last address first), so that a big-endian value of the 053248's of any width at any address is a

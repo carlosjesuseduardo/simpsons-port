@@ -3,7 +3,7 @@
  *    Description: the sprite engine: the objects' animations, their moves, the depth sort and their sprites
  *    Version:     0.1.0
  *    Created:     06-11-2026
- *    Modified:    11-11-2026
+ *    Modified:    13-11-2026
  *    Author:      Sebastian Toyos
  *
  *    The Simpsons (arcade, Konami 1991): the game's 053248 program decompiled into C by
@@ -444,7 +444,7 @@ void set_step_sprite_priority(void)
 
 /* Steps the object's animation and writes its frame's sprites (and its shadow's) in the sprite RAM at Y,
    borrowing another object's sprites when it needs more than 8. */
-uint16_t draw_object(uint16_t object, uint16_t sprites)
+uint16_t CONSOLE_ORIGINAL(draw_object)(uint16_t object, uint16_t sprites)
 {
 	uint32_t carry = 0;
 	uint8_t animation = 0, frame_flags = 0, frame_time = 0, index = 0, index_high = 0, kind_number = 0;

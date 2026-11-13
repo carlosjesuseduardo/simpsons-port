@@ -3,7 +3,7 @@
  *    Description: the four players run each frame with their controls, and how a player joins the stage
  *    Version:     0.1.0
  *    Created:     06-11-2026
- *    Modified:    11-11-2026
+ *    Modified:    13-11-2026
  *    Author:      Sebastian Toyos
  *
  *    The Simpsons (arcade, Konami 1991): the game's 053248 program decompiled into C by
@@ -13,7 +13,7 @@
 
 /* Runs the four players' objects with their controls and records, adding their y scroll requests; at a
    stage's end, once all four stand idle, says so in 184E and removes the objects they carry. */
-void player_run_all(void)
+void CONSOLE_ORIGINAL(player_run_all)(void)
 {
 	uint8_t idle_players = 0, players_left = 0;
 	uint16_t bit_and_number = 0, controls = 0, held_object = 0, player = 0, player_2 = 0, record = 0;
@@ -971,7 +971,7 @@ uint16_t player_game_over(uint16_t player, uint16_t slot)
 }
 
 /* Counts the players in players_in_game into player_count, at least 1 */
-void count_players_in_game(void)
+void CONSOLE_ORIGINAL(count_players_in_game)(void)
 {
 	uint8_t players_left = 0, playing_bits = 0;
 	uint8_t players_before = 0;

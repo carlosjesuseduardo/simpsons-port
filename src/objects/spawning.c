@@ -3,7 +3,7 @@
  *    Description: the stage's spawns by the scroll, the free-slot search, child objects, the enemy limit
  *    Version:     0.1.0
  *    Created:     06-11-2026
- *    Modified:    11-11-2026
+ *    Modified:    13-11-2026
  *    Author:      Sebastian Toyos
  *
  *    The Simpsons (arcade, Konami 1991): the game's 053248 program decompiled into C by
@@ -36,7 +36,7 @@ uint32_t start_stage_objects(uint32_t left_caller)
    camera's, in the cemetery by the climb), unless the stage holds too many enemies: each in a free slot
    of its list, with its type, starting state, place (just off the right edge, or the left with bit 7 of
    its flags), height and floor; spawns above the stage's difficulty are skipped. */
-void spawn_stage_objects(void)
+void CONSOLE_ORIGINAL(spawn_stage_objects)(void)
 {
 	uint32_t carry = 0;
 	uint8_t enemy_speed = 0, spawn_flags = 0, spawn_height = 0;

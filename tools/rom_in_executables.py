@@ -1,21 +1,24 @@
 """
 Name:        rom_in_executables.py
 Description: looks for the ROM set's content in the built executables: none of the game's may hold any
-Version:     0.1.0
+Version:     0.2.0
 Created:     06-11-2026
-Modified:    11-11-2026
+Modified:    13-11-2026
 Author:      Sebastian Toyos
 
-Usage: python tools/rom_in_executables.py [EXECUTABLE ...]   (default: the game's in build/bin)
+Usage: python tools/rom_in_executables.py [EXECUTABLE ...]   (default: the games' in build/bin)
 
 Every 32-byte stretch of the ROM set (rom/), at every 32nd byte, is looked for in the executables, as the files
 have it (each chip) and as the board lays it out (the regions: the 053248's program, the Z80's, the tiles, the
-sprites, the samples, the EEPROM); a stretch any binary could hold (almost all one byte, up to three runs of two
-bytes, or bytes or 16-bit words in an arithmetic progression) is left out. Prints, for each executable, how many
-stretches of each it holds; the game's must hold none. An executable that is not there is said so and left out
-(the game's window is built only with SDL2, the translation scaffold only after tools/recompile.py); when none of
-them is there, nothing is checked and the check fails. (The tools that run the original program, kref and its
-oracles, read the ROM set when they start: they are not the game's.)
+sprites, the samples, the EEPROM); a stretch any binary could hold is left out, one a few bytes say all of: almost
+all one byte, up to three runs of two bytes, two runs each of one value (a byte, a 16-bit or a 32-bit word) over
+and over, or bytes or 16-bit words in an arithmetic progression. (The two runs: padding, then a table of one value,
+as the C runtime's character types are, zeros then 0020 and 0028 over and over, which MSVC's static runtime puts in
+the games; or MAME's masks in kref, zeros then 00FFFFFF.) Prints, for each executable, how many stretches of each it
+holds; the game's must hold none. An executable that is not there is said so and left out (the games' windows are
+built only with SDL2, the translation scaffold only after tools/recompile.py); when none of them is there, nothing is
+checked and the check fails. (The tools that run the original program, kref and its oracles, read the ROM set when
+they start: they are not the game's.)
 """
 import struct
 import sys
@@ -29,15 +32,30 @@ ROOT = game_profile.ROOT
 rom = game_profile.rom
 SPAN = 32
 EXTENSION = ".exe" if sys.platform == "win32" else ""
-GAME = [name + EXTENSION for name in ("simpsons_game_headless", "simpsons_headless", "simpsons")]
+GAME = [name + EXTENSION for name in ("simpsons_game_headless", "simpsons_headless", "The Simpsons Arcade",
+                                        "The Simpsons")]
+
+
+def repeating_runs(chunk, period):
+    """The fewest runs the stretch is made of, each the same 'period' bytes or fewer over and over (a byte, a word):
+    a run goes on as long as each byte is the one 'period' before it (the fewest, as a part of a run is one too)"""
+    runs, start = 1, 0
+    for index in range(len(chunk)):
+        if index - start >= period and chunk[index] != chunk[index - period]:
+            runs += 1
+            start = index
+    return runs
 
 
 def trivial(chunk):
     """Almost one byte over and over (all but 4 of them: a run of padding with a value at an edge), up to three
-    runs of two bytes (zeros, ones, zeros), or bytes or 16-bit words in an arithmetic progression."""
+    runs of two bytes (zeros, ones, zeros), two runs each of one byte, 16-bit or 32-bit word over and over (padding,
+    then a table of one value), or bytes or 16-bit words in an arithmetic progression: a few bytes say all of it."""
     if max(chunk.count(value) for value in set(chunk)) >= len(chunk) - 4:
         return True
     if len(set(chunk)) == 2 and sum(1 for index in range(1, len(chunk)) if chunk[index] != chunk[index - 1]) <= 2:
+        return True
+    if repeating_runs(chunk, 4) <= 2:
         return True
     steps = {(chunk[index + 1] - chunk[index]) & 0xFF for index in range(len(chunk) - 1)}
     if len(steps) == 1:

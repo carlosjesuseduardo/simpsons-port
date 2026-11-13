@@ -1,0 +1,672 @@
+/**
+ *    Name:        console.c
+ *    Description: the console version's own versions of the game functions console/replaced.txt lists, the
+ *                 players' controls on their characters' slots, START's coins and the cabinet's settings
+ *    Version:     0.1.0
+ *    Created:     13-11-2026
+ *    Modified:    13-11-2026
+ *    Author:      Sebastian Toyos
+ *
+ *    license:BSD-3-Clause
+ *    The console version (The Simpsons) runs the arcade game's program with these in place of the game's own (whose
+ *    definitions tools/decompile.py writes as CONSOLE_ORIGINAL(name): original_name here, for these to call), so the
+ *    arcade build (The Simpsons Arcade) stays the program it is. In the attract mode the console's front end runs
+ *    (attract): the Konami presentation at power-on (presentation.c), then the menus on the TV (tv.c, menu.c); ARCADE
+ *    starts the game, whose start shows its portraits, where each player chooses his character (characters.c). As
+ *    tmnt-port's console.c.
+ *
+ *    No coins at home: a player's START puts the coin and the attack in (console_controls), on the slot of the
+ *    character he chose (each slot is a character: 1 Marge, 2 Homer, 3 Bart, 4 Lisa), and every box that would show
+ *    INSERT COIN shows the game's own PRESS START (gauges.c). The cabinet's settings OPTIONS changes (the difficulty,
+ *    the lives a credit gives, the attract mode's sound, the screen flipped) go into the EEPROM's settings, 68-7F,
+ *    with their sum, before the boot reads them, and from OPTIONS into the work RAM's copy of them (59F0-) and the
+ *    game's variables, as the boot's apply_settings takes them (symbols.txt: apply_settings 078A1A,
+ *    eeprom_load_settings 05E00F, eeprom_write_sum 05EA57).
+ *
+ *    The lives and continues (guideline 10): ARCADE's game keeps the cabinet's (OPTIONS' LIVES a credit, a START a
+ *    continue as long as one likes); a game of the console's own modes sets its own as it starts
+ *    (console_set_mode_lives: MODE_LIVES a credit and MODE_CONTINUES continues, TMNT's Splinter Way's), each player's
+ *    credits counted, and his START opens nothing once his continues are over. The Konami code's game is one
+ *    (konami.c), with as many as one likes when its LIVES are INFINITE.
+ */
+#include "console_internal.h"
+
+#include "game.h"
+#include "simpsons/machine.h"
+
+#include <stdio.h>
+#include <string.h>
+
+/* A join: the coin held 2 frames, then (its credit counted) the attack pressed 2 frames in every 8 until the slot
+   plays (player_join takes a slot's credits when its player presses a button: ATTACK, JUMP or START, 0xB0), for at
+   most JOIN_FRAMES frames; on the portraits a coin alone first (its character comes alive, characters.c), the attack
+   once everyone has chosen */
+#define JOIN_COIN_FRAMES    2
+#define JOIN_ATTACK_FROM    5
+#define JOIN_ATTACK_FRAMES  2
+#define JOIN_ATTACK_EVERY   8
+#define JOIN_FRAMES         240
+#define LENT_CREDIT         1u         /* (start_game) */
+#define SOUND_SILENCE       0x0000u    /* the sound program's command 00: everything silenced (game_start_clear) */
+
+/* The EEPROM's settings (assets/eeprom.txt: 68-7F; the boot copies 68-7D into the work RAM at 59F0) */
+#define EEPROM_DIFFICULTY   0x6Cu      /* 59F4 difficulty_option: 0-3 */
+#define EEPROM_LIVES        0x6Du      /* 59F5 lives_option: the lives a credit gives, less one */
+#define EEPROM_DEMO_SOUND   0x6Eu      /* 59F6 attract_sound_option */
+#define EEPROM_SCREEN_FLIP  0x6Fu      /* 59F7 screen_flip_option */
+#define EEPROM_SUM          0x7Eu      /* the sum of 00-7D, big endian (eeprom_write_sum) */
+
+console_state console = { .last_presser = 0 };
+int console_slot_of[CONSOLE_PLAYERS];    /* (-1 each from console_attach on) */
+
+/* The factory's (assets/eeprom.txt): NORMAL, 2 lives, the attract mode's sound on, the screen the right way up */
+console_settings_t console_settings = { .window_scale = 3, .pixels = PIXELS_SHARP, .volume = 5, .vsync = true,
+	.wide = WIDE_AUTO, .game_difficulty = 1, .game_lives = 2, .demo_sound = true, .upside_down = false,
+	.bart_shirt = true };
+
+const char *const console_pixel_names[PIXELS_KINDS] = { "sharp", "smooth", "bilinear", "crt" };
+const char *const console_wide_names[WIDE_KINDS] = { "off", "16:9", "20:9", "16:10", "auto" };
+const char *const console_difficulty_names[CONSOLE_DIFFICULTIES] = { "easy", "normal", "difficult", "very difficult" };
+
+static bool arcade_test;    /* console_arcade_test: the arcade's attract mode and controls, for checks */
+
+void console_arcade_test(void)
+{
+	arcade_test = true;
+	console.booted = true;
+	console.page = PAGE_MENU;
+}
+
+bool console_arcade_testing(void)
+{
+	return arcade_test;
+}
+
+/* Each slot's join: its frames since it started plus one (0: none; zero-initialized, no table of the executable's: a
+   table of -1 and 0 words is a stretch the sprite ROM has too, tools/rom_in_executables.py), whether a coin goes in
+   first, and whether the attack follows */
+static struct
+{
+	int frames;
+	bool coin;
+	bool attack;
+} joins[CONSOLE_PLAYERS];
+
+static uint8_t controls_last[CONSOLE_PLAYERS];    /* each player's controls at the last frame */
+
+/* ---- the slots ---- */
+
+/* The slot's record of the players' (player_variable_records, 07E821: four of 27 bytes, the slots' order) */
+static const struct player *slot_record(int slot)
+{
+	return PLAYER(player_variable_records_ADDRESS + (uint32_t)slot * (uint32_t)sizeof(struct player));
+}
+
+bool console_slot_plays(int slot)
+{
+	return slot >= 0 && slot < CONSOLE_PLAYERS && (players_playing & slot_record(slot)->bit) != 0u;
+}
+
+bool console_slot_joining(int slot)
+{
+	return slot >= 0 && slot < CONSOLE_PLAYERS && joins[slot].frames > 0 && joins[slot].attack;
+}
+
+static uint8_t slot_lives(int slot)
+{
+	return RAM8(slot_record(slot)->lives);
+}
+
+bool console_join(int slot, bool coin, bool attack)
+{
+	if (slot < 0 || slot >= CONSOLE_PLAYERS || joins[slot].frames > 0)
+		return false;
+	joins[slot].frames = 1;
+	joins[slot].coin = coin;
+	joins[slot].attack = attack;
+	return true;
+}
+
+bool console_join_going_on(int slot)
+{
+	return slot >= 0 && slot < CONSOLE_PLAYERS && joins[slot].frames > 0;
+}
+
+/* A START in a game: a player whose character plays (or is coming in) pauses it (the port's); any other chooses his
+   character, then comes in on it (characters.c) */
+static void start_pressed(int player)
+{
+	const int slot = console_slot_of[player];
+
+	if (game_mode != GAME_MODE_GAME || console.quitting_game || !console_player_may_join(player))
+		return;    /* (FRANK GRIMES LIFE: its one player alone) */
+	if (slot >= 0 && (console_slot_plays(slot) || console_slot_joining(slot)))
+		return;
+	character_change_open(player);
+}
+
+void console_controls(const uint8_t pressed[CONSOLE_PLAYERS], uint8_t starts)
+{
+	uint8_t slots[CONSOLE_PLAYERS] = { 0, 0, 0, 0 };
+	uint8_t fresh_of[CONSOLE_PLAYERS];
+	uint8_t coins = 0;
+
+	if (arcade_test)
+	{
+		/* (the board's inputs as the script left them: its coins, and each player's buttons on his own slot) */
+		console.page = game_mode == GAME_MODE_GAME ? PAGE_GAME : PAGE_MENU;
+		for (int slot = 0; slot < CONSOLE_PLAYERS; slot++)
+			simpsons_board.players[slot] = (uint8_t)~pressed[slot];
+		return;
+	}
+	for (int player = 0; player < CONSOLE_PLAYERS; player++)
+	{
+		const uint8_t fresh = (uint8_t)(pressed[player] & ~controls_last[player]);
+
+		fresh_of[player] = fresh;
+		if ((starts & (1u << player)) || (fresh & (SIMPSONS_ATTACK | SIMPSONS_JUMP)))
+			console.last_presser = player;
+		controls_last[player] = pressed[player];
+		/* out of a game, a player's controls newly pressed are the menus' actions too (whatever the port reads into
+		   them: its keys and pads as each player's), besides the ones the port sends (console_actions) */
+		if (console.page != PAGE_GAME)
+		{
+			const uint32_t actions = ((fresh & SIMPSONS_UP) ? ACTION_BIT(ACTION_UP) : 0u)
+				| ((fresh & SIMPSONS_DOWN) ? ACTION_BIT(ACTION_DOWN) : 0u)
+				| ((fresh & SIMPSONS_LEFT) ? ACTION_BIT(ACTION_LEFT) : 0u)
+				| ((fresh & SIMPSONS_RIGHT) ? ACTION_BIT(ACTION_RIGHT) : 0u)
+				| ((fresh & SIMPSONS_ATTACK) ? ACTION_BIT(ACTION_ACCEPT) : 0u)
+				| ((fresh & SIMPSONS_JUMP) ? ACTION_BIT(ACTION_BACK) : 0u);
+
+			console.pressed |= actions;
+			console.player_pressed[player] |= actions | ((starts & (1u << player)) ? ACTION_BIT(ACTION_START) : 0u);
+		}
+	}
+	if (console.page != PAGE_GAME && starts)
+		console.pressed |= ACTION_BIT(ACTION_START);    /* (any player's START, in the menus) */
+	if (console.page != PAGE_GAME)
+		memset(console.character_change, 0, sizeof(console.character_change));
+	else
+		for (int player = 0; player < CONSOLE_PLAYERS; player++)
+		{
+			const bool start = (starts & (1u << player)) != 0;
+
+			if (console.character_change[player])
+				character_change_frame(player, fresh_of[player], start);
+			else if (start)
+				start_pressed(player);
+			if (console_slot_of[player] >= 0 && !console.character_change[player])
+				slots[console_slot_of[player]] |= pressed[player];    /* (choosing a character: none, so that his
+					buttons do not hurry the continue's countdown) */
+		}
+	if (boss_rush_crossing())
+		memset(slots, 0, sizeof(slots));    /* (BOSS RUSH's crossing: its own controls, modes.c) */
+	for (int slot = 0; slot < CONSOLE_PLAYERS; slot++)
+		slots[slot] |= konami_presses(slot) | modes_presses(slot);    /* (the Konami game: the story before stage 1
+			skipped; BOSS RUSH: a stage crossed to its boss) */
+	for (int slot = 0; slot < CONSOLE_PLAYERS; slot++)
+	{
+		const int frame = joins[slot].frames - 1;
+
+		if (frame < 0)
+			continue;
+		if (joins[slot].coin && frame < JOIN_COIN_FRAMES)
+			coins |= (uint8_t)(SIMPSONS_COIN1 << slot);
+		if (!joins[slot].attack)
+		{
+			if (frame >= JOIN_ATTACK_FROM)
+			{
+				joins[slot].frames = 0;    /* (a coin alone: done) */
+				continue;
+			}
+		}
+		else if (frame < JOIN_ATTACK_FROM)
+			slots[slot] &= (uint8_t)~(SIMPSONS_ATTACK | SIMPSONS_JUMP);    /* (let go, for the attack's press to be new) */
+		else if (console_slot_plays(slot))
+		{
+			joins[slot].frames = 0;    /* (in: the player's own controls from now on) */
+			continue;
+		}
+		else if ((frame - JOIN_ATTACK_FROM) % JOIN_ATTACK_EVERY < JOIN_ATTACK_FRAMES)
+			slots[slot] |= SIMPSONS_ATTACK;
+		else
+			slots[slot] &= (uint8_t)~SIMPSONS_ATTACK;
+		if (++joins[slot].frames > JOIN_FRAMES)
+			joins[slot].frames = 0;
+	}
+	for (int slot = 0; slot < CONSOLE_PLAYERS; slot++)
+		simpsons_board.players[slot] = (uint8_t)~slots[slot];
+	simpsons_board.coins = (uint8_t)~coins;
+}
+
+void console_actions(uint32_t pressed)
+{
+	console.pressed |= pressed;
+	console.player_pressed[0] |= pressed;    /* (the port's fixed keys: player 1's, as his keys are by default) */
+}
+
+void console_controls_held(const uint8_t pressed[CONSOLE_PLAYERS])
+{
+	for (int player = 0; player < CONSOLE_PLAYERS; player++)
+		controls_last[player] = pressed[player];
+}
+
+/* A game over and the attract mode again: the players off their slots and back to their own characters, no joins
+   going on, no choices open, no credits counted, the cabinet's lives */
+static void slots_game_over(void)
+{
+	for (int slot = 0; slot < CONSOLE_PLAYERS; slot++)
+	{
+		console_slot_of[slot] = -1;
+		joins[slot].frames = 0;
+		console.character_change[slot] = 0;
+		console.credits_put[slot] = 0;
+	}
+	console_characters_reset();
+	console_set_mode_lives(LIVES_CABINET, CONTINUES_UNLIMITED);
+}
+
+/* ---- the lives and continues ---- */
+
+void console_set_mode_lives(int lives, int continues)
+{
+	console.mode_lives = lives;
+	console.mode_continues = continues;
+	/* (OPTIONS' as apply_settings takes them: lives_option plus one) */
+	lives_per_credit = (uint8_t)(lives != LIVES_CABINET ? lives : console_settings.game_lives);
+}
+
+bool console_credit_allowed(int player)
+{
+	return player >= 0 && player < CONSOLE_PLAYERS && (console.mode_continues == CONTINUES_UNLIMITED
+		|| console.credits_put[player] <= console.mode_continues);
+}
+
+void console_credit_put(int player)
+{
+	if (player >= 0 && player < CONSOLE_PLAYERS)
+		console.credits_put[player]++;
+}
+
+/* A game started at the attract mode's next frame, the choice on its portraits: its lives and continues, its first
+   step (konami.c sets it once stage 1 is played) */
+void console_start_game(int player, int step, int lives, int continues)
+{
+	console_settings_into_game();    /* (OPTIONS' settings, as the game starts) */
+	slots_game_over();
+	console_set_mode_lives(lives, continues);
+	console.start_step = step;
+	console.start_pending = step != STEP_FIRST_STAGE;
+	console.chooser = player;
+	console.page = PAGE_STARTING;
+	console.choice = 0;
+	console.page_frames = 0;
+	modes_game_starting();    /* (MR. PLOW MODE's: modes.c) */
+}
+
+/* ARCADE: the cabinet's game, its lives and continues OPTIONS', from its beginning */
+void console_start_arcade(int player)
+{
+	console.konami = false;
+	console.mode = MODE_NONE;
+	console_start_game(player, STEP_FIRST_STAGE, LIVES_CABINET, CONTINUES_UNLIMITED);
+}
+
+/* The attract mode's own start of a game, with no player in it yet: it starts the game when a slot has a credit, so
+   one is lent to the first slot for its frame (the factory's EEPROM has a credit for each slot of its own,
+   separate_coin_slots: a slot's credit would bring its character in on the portraits) and taken back; no slot's
+   credit is left, and nobody has joined (players_joined is the credit count's high byte, 0) */
+static void start_game(uint16_t u)
+{
+	const uint16_t kept_credits = credits, kept_slot_credits = slot_credits;
+
+	credits = LENT_CREDIT;
+	slot_credits = LENT_CREDIT;
+	original_attract(u);
+	credits = kept_credits;
+	slot_credits = kept_slot_credits;
+}
+
+/* ---- the cabinet's settings ---- */
+
+void console_settings_into_eeprom(void)
+{
+	uint8_t *data = simpsons_board.eeprom.data;
+	uint16_t sum = 0;
+
+	data[EEPROM_DIFFICULTY] = (uint8_t)console_settings.game_difficulty;
+	data[EEPROM_LIVES] = (uint8_t)(console_settings.game_lives - 1);
+	data[EEPROM_DEMO_SOUND] = console_settings.demo_sound ? 1u : 0u;
+	data[EEPROM_SCREEN_FLIP] = console_settings.upside_down ? 1u : 0u;
+	for (unsigned address = 0; address < EEPROM_SUM; address++)
+		sum = (uint16_t)(sum + data[address]);
+	data[EEPROM_SUM] = (uint8_t)(sum >> 8);
+	data[EEPROM_SUM + 1u] = (uint8_t)sum;
+}
+
+/* (as the boot takes them: eeprom_load_settings copies the EEPROM's 68-7D to 59F0-, apply_settings sets the game's
+   variables and the chips' flip from them) */
+void console_settings_into_game(void)
+{
+	console_settings_into_eeprom();
+	difficulty_option = (uint8_t)console_settings.game_difficulty;
+	lives_option = (uint8_t)(console_settings.game_lives - 1);
+	attract_sound_option = console_settings.demo_sound ? 1u : 0u;
+	screen_flip_option = console_settings.upside_down ? 1u : 0u;
+	apply_settings();
+}
+
+/* ---- the game's functions in the console's versions ---- */
+
+/* The game ended where it is, as its own end takes it back to the attract mode (game_finish, end_game): the sprites
+   and the layers cleared, the sound silenced, the scores and the game's variables cleared, no credits nor lives left */
+static void end_game_now(void)
+{
+	for (int slot = 0; slot < CONSOLE_PLAYERS; slot++)
+		RAM8(slot_record(slot)->lives) = 0u;
+	io_write8(tile_chip_scroll_control, 0u);
+	clear_sprites();
+	clear_tile_layers();
+	queue_sound_always(SOUND_SILENCE);
+	reset_for_game();
+	credits = 0u;
+	slot_credits = 0u;
+	slot_2_credits = 0u;
+	slot_3_credits = 0u;
+	slot_4_credits = 0u;
+	players_playing = 0u;
+	players_going_on = 0u;
+	mode_step = 0u;
+	mode_phase = 0u;
+	game_step = 0u;
+	step_phase = 0u;
+	step_subphase = 0u;
+	step_countdown = 0u;
+	game_mode = GAME_MODE_ATTRACT;
+	marge_state = 0u;
+	homer_state = 0u;
+	bart_state = 0u;
+	lisa_state = 0u;
+}
+
+void console_end_game(void)
+{
+	console.quitting_game = true;
+}
+
+/* The game mode's frame: the game's own, the character choice over its portraits, or its end where the pause's QUIT
+   GAME or RESTART (or the choice left) asked for it */
+void game_mode_frame(uint16_t u)
+{
+	if (console.quitting_game)
+	{
+		console.quitting_game = false;
+		end_game_now();
+		return;
+	}
+	if (console.page == PAGE_CHOICE)
+	{
+		uint32_t player_pressed[CONSOLE_PLAYERS];
+
+		memcpy(player_pressed, console.player_pressed, sizeof(player_pressed));
+		memset(console.player_pressed, 0, sizeof(console.player_pressed));
+		console.pressed = 0;
+		choice_frame(player_pressed);
+		if (console.quitting_game)
+			return;    /* (the choice left: the game ends at its next frame) */
+	}
+	konami_game_frame();    /* (the Konami game: its stage, its lives and health) */
+	if (modes_game_frame())
+		return;    /* (MR. PLOW MODE's game over: it ends at its next frame) */
+	same_character_marks();
+	original_game_mode_frame(u);
+	if (console.page == PAGE_CHOICE)
+		same_character_portraits();
+}
+
+/* The attract mode's frame: the presentation at power-on, then the menus on the TV; ARCADE's coin, and the attract's
+   own start of the game once its credit has gone in */
+void attract(uint16_t u)
+{
+	uint32_t pressed = console.pressed;
+	uint32_t player_pressed[CONSOLE_PLAYERS];
+
+	memcpy(player_pressed, console.player_pressed, sizeof(player_pressed));
+	memset(console.player_pressed, 0, sizeof(console.player_pressed));
+	console.pressed = 0;
+	console.booted = true;
+	same_character_marks();    /* (the game's own marks out of a game) */
+	if (arcade_test)
+	{
+		original_attract(u);    /* (the arcade's own: a script's coins start its game) */
+		return;
+	}
+	if (console.page == PAGE_GAME || console.page == PAGE_CHOICE)
+	{
+		/* (back from a game: the menu, the actions pressed during the game let go; after the pause's RESTART, the
+		   same game started again, each player on the character he played) */
+		const bool restarting = console.restarting;
+		const int lives = console.mode_lives, continues = console.mode_continues, mode = console.mode;
+
+		slots_game_over();
+		if (!restarting)
+		{
+			console.konami = false;    /* (RESTART: the same game again, at its step, its lives and continues) */
+			console.mode = MODE_NONE;
+		}
+		tv_forget();
+		console.page = PAGE_MENU;
+		console.choice = 0;
+		if (!restarting && mode != MODE_NONE)
+		{
+			console.page = PAGE_MR_PLOW;    /* (a mode's game over: MR. PLOW MODE's page at its line, its lines in */
+			console.choice = mode - MODE_BOSS_RUSH;    /* the modes' order) */
+		}
+		console.page_frames = 0;
+		pressed = 0;
+		memset(player_pressed, 0, sizeof(player_pressed));
+		if (restarting)
+		{
+			console_start_game(console.chooser, console.start_step, lives, continues);
+			console.restarting = true;    /* (the choice picks again at once) */
+		}
+	}
+	if (console.page == PAGE_PRESENTATION)
+	{
+		if (presentation_frame(pressed))
+			return;
+		console.page = PAGE_MENU;
+		console.choice = 0;
+		console.page_frames = 0;
+		pressed = 0;
+		memset(player_pressed, 0, sizeof(player_pressed));
+	}
+	menu_frame(pressed, player_pressed);
+	if (console.page == PAGE_STARTING)
+	{
+		start_game(u);
+		if (game_mode != GAME_MODE_ATTRACT)
+		{
+			tv_forget();
+			choice_open();
+		}
+		return;
+	}
+	tv_frame();
+}
+
+/* ---- the port ---- */
+
+bool console_attach(const char *folder)
+{
+	for (int player = 0; player < CONSOLE_PLAYERS; player++)
+		console_slot_of[player] = -1;
+	console_characters_reset();
+	console.mode_continues = CONTINUES_UNLIMITED;
+	/* (the Konami code's page at first: LIVES INFINITE, REPEAT CHARACTERS ON; set here, not in the data, as
+	   tmnt-port's) */
+	console.infinite_lives = true;
+	console.repeats = true;
+	console_settings_into_eeprom();    /* (before the boot reads them) */
+	console_bart_shirt_apply();
+	return draw_load_font(folder);
+}
+
+void console_overlay(console_picture *frame)
+{
+	if (arcade_test)
+	{
+		wide_picture_sides(frame);    /* (the arcade's screens as they are, WIDE's sides) */
+		return;
+	}
+	if (!console.booted)
+	{
+		/* (the board's boot, its RAM and ROM checks, under black) */
+		draw_fill(frame, PICTURE_FIRST(frame), 0, PICTURE_END(frame) - PICTURE_FIRST(frame), SIMPSONS_VIDEO_HEIGHT,
+			0x000000u);
+		return;
+	}
+	if (console.page == PAGE_PRESENTATION)
+	{
+		presentation_overlay(frame);
+		return;
+	}
+	wide_picture_sides(frame);    /* (WIDE: a picture's sides, its edges' colour) */
+	menu_overlay(frame);
+	choice_overlay(frame);
+	character_change_overlay(frame);
+	konami_overlay(frame);
+	modes_overlay(frame);    /* (BOSS RUSH's crossing: its card on black) */
+}
+
+bool console_quit_requested(void)
+{
+	return console.quit;
+}
+
+bool console_can_pause(void)
+{
+	return console.page == PAGE_GAME && game_mode == GAME_MODE_GAME && !console.quitting_game;
+}
+
+/* Whether a START of 'player' pauses the game: his character plays, or is coming in (a START of one who does not
+   play chooses his character, start_pressed) */
+bool console_start_pauses(int player)
+{
+	const int slot = player >= 0 && player < CONSOLE_PLAYERS ? console_slot_of[player] : -1;
+
+	return slot >= 0 && console_can_pause() && !console.character_change[player]
+		&& (console_slot_plays(slot) || console_slot_joining(slot));
+}
+
+void console_quit_game(void)
+{
+	console.restarting = false;
+	console.quitting_game = true;
+}
+
+/* RESTART: the same game again, every player on the character he plays (those who came in during the game too) */
+void console_restart_game(void)
+{
+	for (int player = 0; player < CONSOLE_PLAYERS; player++)
+	{
+		const int slot = console_slot_of[player];
+
+		console.choice_character[player] = slot >= 0 && (console_slot_plays(slot) || console_slot_joining(slot))
+			? console_slot_character[slot] : -1;
+	}
+	console.quitting_game = true;
+	console.restarting = true;
+}
+
+void console_describe(char *text, size_t size)
+{
+	static const char *const pages[] = { "presentation", "menu", "mr. plow mode", "options", "video", "controls",
+		"starting", "choice", "game", "konami" };
+	char konami[160] = "";
+	const uint8_t *eeprom = simpsons_board.eeprom.data;
+
+	snprintf(text, size, "page %s, game_mode %u, mode_phase %u, game_step %u, slots %d %d %d %d, choice %d%s %d%s %d%s "
+		"%d%s, change %d %d %d %d, playing %02X, lives %u %u %u %u, credits %u; eeprom 6C-6F %02X %02X %02X %02X sum "
+		"%02X%02X; difficulty_setting %u, lives_per_credit %u", pages[console.page], (unsigned)game_mode,
+		(unsigned)mode_phase, (unsigned)game_step, console_slot_of[0], console_slot_of[1], console_slot_of[2],
+		console_slot_of[3], console.choice_character[0], console.choice_picked[0] ? "*" : "",
+		console.choice_character[1], console.choice_picked[1] ? "*" : "", console.choice_character[2],
+		console.choice_picked[2] ? "*" : "", console.choice_character[3], console.choice_picked[3] ? "*" : "",
+		console.character_change[0] - 1, console.character_change[1] - 1, console.character_change[2] - 1,
+		console.character_change[3] - 1, (unsigned)players_playing, (unsigned)slot_lives(0), (unsigned)slot_lives(1),
+		(unsigned)slot_lives(2), (unsigned)slot_lives(3), (unsigned)credits, eeprom[EEPROM_DIFFICULTY],
+		eeprom[EEPROM_LIVES], eeprom[EEPROM_DEMO_SOUND], eeprom[EEPROM_SCREEN_FLIP], eeprom[EEPROM_SUM],
+		eeprom[EEPROM_SUM + 1u], (unsigned)difficulty_setting, (unsigned)lives_per_credit);
+	if (console.mode != MODE_NONE)
+	{
+		const size_t used = strlen(text);
+
+		snprintf(text + used, size > used ? size - used : 0, "; %s", modes_describe());
+	}
+	if (console.konami)
+		snprintf(konami, sizeof(konami), "; konami stage %s%s%s%s%s", konami_stage_name(console.konami_stage),
+			console.start_pending ? " (pending)" : "", console.infinite_lives ? ", infinite lives" : "",
+			console.infinite_health ? ", infinite health" : "", console.repeats ? ", repeats" : "");
+	{
+		const size_t used = strlen(text);
+
+		snprintf(text + used, size > used ? size - used : 0, "; characters %d %d %d %d, credits %d %d %d %d, "
+			"continues %d%s; step_phase %u; vitality %02X %02X %02X %02X; x %04X %04X %04X %04X, flags %02X %02X %02X %02X, kinds %02X %02X %02X %02X, teamed %02X %02X %02X %02X, camera %04X",
+			console_slot_character[0], console_slot_character[1], console_slot_character[2], console_slot_character[3],
+			console.credits_put[0], console.credits_put[1], console.credits_put[2], console.credits_put[3],
+			console.mode_continues, konami, (unsigned)step_phase, (unsigned)OBJECT(OBJECT_ADDRESS(0))->vitality,
+			(unsigned)OBJECT(OBJECT_ADDRESS(2))->vitality, (unsigned)OBJECT(OBJECT_ADDRESS(4))->vitality,
+			(unsigned)OBJECT(OBJECT_ADDRESS(6))->vitality, (unsigned)OBJECT(OBJECT_ADDRESS(0))->x,
+			(unsigned)OBJECT(OBJECT_ADDRESS(2))->x, (unsigned)OBJECT(OBJECT_ADDRESS(4))->x,
+			(unsigned)OBJECT(OBJECT_ADDRESS(6))->x, (unsigned)OBJECT(OBJECT_ADDRESS(0))->flags,
+			(unsigned)OBJECT(OBJECT_ADDRESS(2))->flags, (unsigned)OBJECT(OBJECT_ADDRESS(4))->flags,
+			(unsigned)OBJECT(OBJECT_ADDRESS(6))->flags, (unsigned)OBJECT(OBJECT_ADDRESS(0))->kind,
+			(unsigned)OBJECT(OBJECT_ADDRESS(2))->kind, (unsigned)OBJECT(OBJECT_ADDRESS(4))->kind,
+			(unsigned)OBJECT(OBJECT_ADDRESS(6))->kind, (unsigned)OBJECT(OBJECT_ADDRESS(0))->player.teamed,
+			(unsigned)OBJECT(OBJECT_ADDRESS(2))->player.teamed, (unsigned)OBJECT(OBJECT_ADDRESS(4))->player.teamed,
+			(unsigned)OBJECT(OBJECT_ADDRESS(6))->player.teamed, (unsigned)camera_x);
+	}
+	{
+		/* (the players' boxes' colours, pen 11 of the palettes 20-23, which a player's hurt flash animates) */
+		size_t at = strlen(text);
+
+		snprintf(text + at, size > at ? size - at : 0, "; boxes");
+		for (unsigned palette = 0x20u; palette < 0x24u; palette++)
+		{
+			at = strlen(text);
+			snprintf(text + at, size > at ? size - at : 0, " %02X%02X",
+				(unsigned)simpsons_board.palette[(palette * 16u + 11u) * 2u],
+				(unsigned)simpsons_board.palette[(palette * 16u + 11u) * 2u + 1u]);
+		}
+	}
+	{
+		/* (the high score table's first five: initials and the character, high_scores' records of 8 bytes) */
+		size_t used = strlen(text);
+
+		snprintf(text + used, size > used ? size - used : 0, "; table");
+		for (unsigned entry = 0; entry < 5u; entry++)
+		{
+			char initials[4];
+
+			for (unsigned letter = 0; letter < 3u; letter++)
+			{
+				const uint8_t value = RAM8(high_scores_ADDRESS + entry * 8u + letter);
+
+				initials[letter] = value >= 0x20u && value < 0x7Fu ? (char)value : '?';
+			}
+			initials[3] = 0;
+			used = strlen(text);
+			snprintf(text + used, size > used ? size - used : 0, " %s%u", initials,
+				(unsigned)RAM8(high_scores_ADDRESS + entry * 8u + 5u));
+		}
+	}
+}
+
+/* A save state's part (states.c): the joins under way and each player's controls at the last frame */
+void console_joins_state(simpsons_state *state)
+{
+	simpsons_state_part(state, "joins");
+	simpsons_state_bytes(state, joins, sizeof(joins));
+	simpsons_state_bytes(state, controls_last, sizeof(controls_last));
+}

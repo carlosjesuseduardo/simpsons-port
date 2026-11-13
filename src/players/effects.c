@@ -3,7 +3,7 @@
  *    Description: a player's blinking, hit sparks, balloons and voices: the second sprite at +60 and the sounds by character
  *    Version:     0.1.0
  *    Created:     06-11-2026
- *    Modified:    11-11-2026
+ *    Modified:    13-11-2026
  *    Author:      Sebastian Toyos
  *
  *    The Simpsons (arcade, Konami 1991): the game's 053248 program decompiled into C by
@@ -107,7 +107,7 @@ void player_hurt_voice(uint16_t player)
 }
 
 /* Flashes the player's palette (palette effect 22 plus its character). */
-uint16_t player_flash_palette(uint16_t y, uint16_t player)
+uint16_t CONSOLE_ORIGINAL(player_flash_palette)(uint16_t y, uint16_t player)
 {
 	uint16_t palette = 0, y_2 = 0;
 	uint16_t saved_y = 0;

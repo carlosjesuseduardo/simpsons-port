@@ -4,22 +4,27 @@
  *                 formats tools/core/konami/reference/kref writes
  *    Version:     0.1.0
  *    Created:     06-11-2026
- *    Modified:    06-11-2026
+ *    Modified:    13-11-2026
  *    Author:      Sebastian Toyos
  *
  *    license:BSD-3-Clause
  *    Usage: simpsons_headless [--frames N] [--hashes FILE] [--video-hashes FILE] [--sound-hashes FILE]
- *                             [--sound-wav FILE] [--script FILE] [--service] [--assets FOLDER]
- *                             [--dump FRAME ... --dump-dir DIR]
+ *                             [--sound-wav FILE] [--stereo] [--script FILE] [--service] [--assets FOLDER|PACK]
+ *                             [--rom ROM_SET] [--write-pack FILE] [--dump FRAME ... --dump-dir DIR]
  *    The game (runtime/src/game.c: the program on the board, its own video and sound board) from its assets
- *    (--assets, assets/ by default); it opens no ROM. It runs with frame timing, as kref --timing frames does
+ *    (--assets: the folder, assets/ by default, or the pack, simpsons.assets); --rom loads them from the player's ROM
+ *    set straight instead, through the assets' layout (for the checks: the same state as the folder's).
+ *    --write-pack writes the pack of what it loaded and stops. It runs with frame timing, as kref --timing frames does
  *    (simpsons/frame.h): the script is applied when each VBLANK starts, and the hashes are kref's ("FRAME HASH":
  *    simpsons_state_hash, the frame's pixels with --video-hashes, the sound board's samples and RAM with
  *    --sound-hashes, as kref --sound-timing makes them), so the two compare line by line. --sound-wav writes the
- *    sound the ports play (game_audio: stereo, 16 bits), as kref --sound-wav writes the reference's. --service
+ *    sound the ports play (game_audio: stereo, 16 bits), as kref --sound-wav writes the reference's; with --stereo,
+ *    as The Simpsons' SOUND: STEREO mixes it (game_set_stereo: the YM2151's two outputs, the hashes the same). --service
  *    holds the test switch from the start. --dump writes the board's memories at the end of those frames into
  *    --dump-dir's folder (FRAME_work_ram.bin, FRAME_palette.bin...), as kref --dump writes the reference's.
  */
+#include "game/assets.h"
+#include "game/data.h"
 #include "game/game.h"
 #include "simpsons/machine.h"
 #include "simpsons/program.h"
@@ -33,7 +38,9 @@
 #include <string.h>
 
 #define USAGE "Usage: simpsons_headless [--frames N] [--hashes FILE] [--video-hashes FILE] [--sound-hashes FILE]" \
-	" [--sound-wav FILE] [--script FILE] [--service] [--assets FOLDER] [--dump FRAME ... --dump-dir DIR]\n"
+	" [--sound-wav FILE] [--stereo] [--script FILE] [--service] [--assets FOLDER|PACK] [--rom ROM_SET]" \
+	" [--write-pack FILE]" \
+	" [--dump FRAME ... --dump-dir DIR]\n"
 #define DUMPS_MAX 64
 
 static uint64_t g_frames = 600;
@@ -170,9 +177,24 @@ static void frame_done(void)
 		finish();
 }
 
+/* The game's assets from the folder (game_load), from a pack, or from the ROM set through the layout, into the
+   memories game_load loads into (the programs' data as its pieces only): NULL, or what failed */
+static const char *load(const char *assets, const char *rom)
+{
+	const game_assets_memory into[GAME_ASSETS_REGIONS] = {
+		{ NULL, NULL }, { NULL, NULL }, { game_tiles, NULL }, { game_sprites, NULL }, { game_samples, NULL },
+		{ game_eeprom, NULL } };
+
+	if (rom)
+		return game_assets_rom_set_load_into(rom, into);
+	if (game_assets_is_pack(assets))
+		return game_assets_pack_load_into(assets, into);
+	return game_load(assets);
+}
+
 int main(int argc, char **argv)
 {
-	const char *assets = "assets", *script_path = NULL, *problem;
+	const char *assets = "assets", *rom = NULL, *pack = NULL, *script_path = NULL, *problem;
 	bool frames_given = false, service = false;
 
 	for (int index = 1; index < argc; index++)
@@ -198,10 +220,16 @@ int main(int argc, char **argv)
 				return 1;
 			}
 		}
+		else if (!strcmp(argv[index], "--stereo"))
+			game_set_stereo(true);
 		else if (!strcmp(argv[index], "--script") && has_value)
 			script_path = argv[++index];
 		else if (!strcmp(argv[index], "--assets") && has_value)
 			assets = argv[++index];
+		else if (!strcmp(argv[index], "--rom") && has_value)
+			rom = argv[++index];
+		else if (!strcmp(argv[index], "--write-pack") && has_value)
+			pack = argv[++index];
 		else if (!strcmp(argv[index], "--service"))
 			service = true;
 		else if (!strcmp(argv[index], "--dump") && has_value)
@@ -215,10 +243,21 @@ int main(int argc, char **argv)
 			return 1;
 		}
 	}
-	if ((problem = game_load(assets)) != NULL)
+	if ((problem = load(assets, rom)) != NULL)
 	{
-		fprintf(stderr, "The game's assets in %s cannot be read: %s\n", assets, problem);
+		fprintf(stderr, rom ? "The ROM set %s cannot be read: %s\n" : "The game's assets in %s cannot be read: %s\n",
+			rom ? rom : assets, problem);
 		return 1;
+	}
+	if (pack)
+	{
+		if ((problem = game_assets_pack_write(pack)) != NULL)
+		{
+			fprintf(stderr, "%s: %s\n", pack, problem);
+			return 1;
+		}
+		printf("%s: the assets pack written (version %08X)\n", pack, (unsigned)game_assets_version());
+		return 0;
 	}
 	if ((problem = game_reset(service, g_video_hashes != NULL)) != NULL)
 	{

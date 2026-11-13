@@ -3,7 +3,7 @@
  *    Description: between the game's sound board (sound_board.c) and its Z80's timing model (sound_cpu.c)
  *    Version:     0.1.0
  *    Created:     06-11-2026
- *    Modified:    06-11-2026
+ *    Modified:    13-11-2026
  *    Author:      Sebastian Toyos
  *
  *    license:BSD-3-Clause
@@ -40,6 +40,10 @@ void sound_cpu_arm_nmi(void);
 /* The Z80's time: where the running block's accesses happen, and where the next block starts */
 uint64_t sound_cpu_access(void);
 uint64_t sound_cpu_clock(void);
+/* A save state's part (simpsons/state.h): the Z80's time and lines, and the sound program's own variables, where the
+   board runs no pass of the program */
+struct simpsons_state;
+void sound_cpu_state(struct simpsons_state *state);
 
 /* ---- the board (sound_board.c) ---- */
 

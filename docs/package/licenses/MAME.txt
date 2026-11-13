@@ -1,0 +1,42 @@
+The game's board in C follows the behavior and tables of these files of MAME 0.289
+(https://github.com/mamedev/mame), each under the BSD 3-Clause License below:
+
+- src/mame/konami/simpsons.cpp: the board of The Simpsons (its memory map, banks, inputs and interrupts,
+  the sprite DMA, the EEPROM's port, its sound board, the tile and sprite callbacks, the palette and the
+  layers' order); copyright Ernesto Corvi.
+- src/mame/konami/k052109.cpp and k053251.cpp: the K052109's tile layers and the K053251's priorities and
+  colour bases; copyright Fabio Priuli, Acho A. Tang, R. Belmont.
+- src/mame/konami/k053246_k053247_k055673.cpp and konami_helper.cpp: the K053246/K053247's sprites;
+  copyright David Haywood.
+- src/devices/sound/k053260.cpp: the K053260; copyright Ernesto Corvi, Alex W. Jackson.
+- src/devices/machine/eepromser.cpp and eeprom.cpp: the ER5911's serial interface and its timing;
+  copyright Aaron Giles.
+
+Copyright (c) the copyright holders named above.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are
+met:
+
+1. Redistributions of source code must retain the above copyright
+   notice, this list of conditions and the following disclaimer.
+
+2. Redistributions in binary form must reproduce the above copyright
+   notice, this list of conditions and the following disclaimer in the
+   documentation and/or other materials provided with the distribution.
+
+3. Neither the name of the copyright holder nor the names of its
+   contributors may be used to endorse or promote products derived from
+   this software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS
+IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
+TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A
+PARTICULAR PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT
+HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED
+TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.

@@ -3,7 +3,7 @@
  *    Description: scripted controls for test runs (format in simpsons/script.h)
  *    Version:     0.1.0
  *    Created:     05-11-2026
- *    Modified:    05-11-2026
+ *    Modified:    13-11-2026
  *    Author:      Sebastian Toyos
  *
  *    license:BSD-3-Clause
@@ -11,6 +11,7 @@
 #include "simpsons/script.h"
 
 #include "simpsons/machine.h"
+#include "simpsons/state.h"
 
 #include <errno.h>
 #include <stdbool.h>
@@ -313,4 +314,24 @@ void simpsons_script_apply(simpsons_script *script, uint64_t frame)
 		}
 	while (script->next < script->count && script->events[script->next].frame <= frame)
 		run_event(script, &script->events[script->next++], frame);
+}
+
+/* Its place: the next event and the presses' ends (what it did on the board is the board's part); a run with no
+   script keeps the same bytes */
+void simpsons_script_state(simpsons_script *script, simpsons_state *state)
+{
+	uint64_t next = script ? script->next : 0, release_at[CONTROL_COUNT];
+
+	simpsons_state_part(state, "script");
+	if (script)
+		memcpy(release_at, script->release_at, sizeof(release_at));
+	else
+		memset(release_at, 0, sizeof(release_at));
+	simpsons_state_bytes(state, &next, sizeof(next));
+	simpsons_state_bytes(state, release_at, sizeof(release_at));
+	if (script && simpsons_state_loading(state))
+	{
+		script->next = next <= script->count ? (size_t)next : script->count;
+		memcpy(script->release_at, release_at, sizeof(release_at));
+	}
 }

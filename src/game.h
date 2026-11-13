@@ -3,7 +3,7 @@
  *    Description: prototypes of the game's functions
  *    Version:     0.1.0
  *    Created:     06-11-2026
- *    Modified:    11-11-2026
+ *    Modified:    13-11-2026
  *    Author:      Sebastian Toyos
  *
  *    The Simpsons (arcade, Konami 1991): the game's 053248 program decompiled into C by
@@ -109,6 +109,7 @@ void attract_reset_layers(void);
 
 /* attract/sequence.c: the attract mode: its scenes until a credit starts the game */
 void attract(uint16_t u);
+void CONSOLE_ORIGINAL(attract)(uint16_t u);
 void attract_opening_scene(uint16_t u);
 void attract_clear_screen(void);
 void attract_wait_clear(void);
@@ -1716,6 +1717,7 @@ void continue_screen(uint16_t *p_player, uint16_t *p_countdown_address, uint16_t
 
 /* game/game.c: the game mode's frame and its first phase */
 void game_mode_frame(uint16_t u);
+void CONSOLE_ORIGINAL(game_mode_frame)(uint16_t u);
 uint32_t game_start_phase(uint16_t u);
 void game_start_clear(void);
 void game_start_palettes(uint16_t palette_job);
@@ -1739,6 +1741,7 @@ void name_entry_rank_players(void);
 uint16_t name_entry_edit_initials(uint16_t entry, uint16_t name_entry_player);
 uint16_t name_entry_print_tall_letter(uint16_t sprite, uint16_t letter_and_colour);
 void name_entry_draw_picture(uint16_t column_and_picture);
+void CONSOLE_ORIGINAL(name_entry_draw_picture)(uint16_t column_and_picture);
 uint32_t name_entry_phase(uint16_t u, uint32_t left_caller);
 void name_entry_start(uint16_t palette_job);
 void name_entry_run(void);
@@ -1748,6 +1751,7 @@ void name_entry_end(void);
 void add_score(uint16_t score, uint8_t addition);
 void high_score_rank(uint16_t *p_score, uint32_t *p_in_high_scores);
 uint16_t insert_high_score(uint16_t place);
+uint16_t CONSOLE_ORIGINAL(insert_high_score)(uint16_t place);
 
 /* game/skip.c: whether a player's button skips what is on (a story) */
 void check_skip(uint16_t wait, uint16_t *p_presses_addresses, uint32_t *p_skipped);
@@ -2444,8 +2448,11 @@ void cap_fall_and_land(uint16_t object, uint16_t *p_z_speed, uint32_t *p_landed)
 uint32_t land_if_falling(uint16_t object);
 void set_hit_box(uint16_t object, uint16_t box);
 void stop_beyond_screen_edge(uint16_t object);
+void CONSOLE_ORIGINAL(stop_beyond_screen_edge)(uint16_t object);
 uint16_t enemy_remove_off_screen(uint16_t object, uint16_t target);
+uint16_t CONSOLE_ORIGINAL(enemy_remove_off_screen)(uint16_t object, uint16_t target);
 uint32_t enemy_on_screen(uint16_t object);
+uint32_t CONSOLE_ORIGINAL(enemy_on_screen)(uint16_t object);
 
 /* objects/obstacles.c: the obstacles: raising the floor, picked up, thrown and broken */
 void cemetery_obstacle_broken_steps(uint16_t object, uint16_t *p_step_handlers, uint32_t *p_left_caller);
@@ -2655,6 +2662,7 @@ void shaking_scenery_recover(uint16_t object);
 /* objects/spawning.c: the stage's spawns by the scroll, the free-slot search, child objects, the enemy limit */
 uint32_t start_stage_objects(uint32_t left_caller);
 void spawn_stage_objects(void);
+void CONSOLE_ORIGINAL(spawn_stage_objects)(void);
 void take_free_object_for_spawn(uint16_t spawn_flags, uint16_t *p_slot, uint32_t *p_slot_found);
 void take_free_object(uint16_t *p_slot, uint16_t *p_list_number, uint32_t *p_slot_found);
 void spawn_child_object(uint16_t object, uint16_t record, uint16_t *p_child, uint16_t *p_list_number, uint32_t *p_slot_found);
@@ -2829,6 +2837,7 @@ void player_blink(uint16_t player);
 uint16_t player_face_heavy_object(uint16_t player, uint8_t first_animation);
 void player_hurt_voice(uint16_t player);
 uint16_t player_flash_palette(uint16_t y, uint16_t player);
+uint16_t CONSOLE_ORIGINAL(player_flash_palette)(uint16_t y, uint16_t player);
 void player_set_in_air(uint16_t player);
 void player_set_on_floor(uint16_t player);
 uint16_t player_reset_box(uint16_t player);
@@ -2855,9 +2864,11 @@ void continue_draw_count(void);
 void continue_erase_count(void);
 void gauges_put_picture(uint16_t tiles, uint16_t picture, uint16_t blank);
 void gauge_draw_picture(uint16_t quarter_and_picture);
+void CONSOLE_ORIGINAL(gauge_draw_picture)(uint16_t quarter_and_picture);
 
 /* players/motion.c: a player's motion against walls, floors, the screen's edges and the scroll, and helpers on its speeds and partner */
 void player_check_motion(uint16_t player);
+void CONSOLE_ORIGINAL(player_check_motion)(uint16_t player);
 void player_floor_against_height(uint16_t player, uint16_t *p_floor_cell, uint32_t *p_floor_at_height, uint32_t *p_floor_below_height, uint32_t *p_floor_compare_overflow);
 void player_keep_life(uint16_t player);
 void player_floor_at_next_place(uint16_t player, uint16_t *p_floor_cell, uint32_t *p_wall);
@@ -2870,9 +2881,11 @@ void player_team_split(uint16_t partner, uint16_t player);
 void player_team_release(uint16_t partner, uint16_t player);
 void player_team_follow(uint16_t partner, uint16_t player);
 void player_check_screen_edges(uint16_t player, uint32_t *p_no_crash, uint32_t *p_carry);
+void CONSOLE_ORIGINAL(player_check_screen_edges)(uint16_t player, uint32_t *p_no_crash, uint32_t *p_carry);
 
 /* players/players.c: the four players run each frame with their controls, and how a player joins the stage */
 void player_run_all(void);
+void CONSOLE_ORIGINAL(player_run_all)(void);
 void player_run(uint16_t record, uint16_t controls, uint16_t player, uint16_t bit_and_number);
 uint32_t player_find_entry_floor(uint16_t player);
 void player_next_state_at_animation_end(uint16_t kind, uint16_t object);
@@ -2884,6 +2897,7 @@ uint16_t player_playing(uint16_t player, uint16_t slot, uint8_t d);
 uint16_t player_continue_countdown(uint16_t player, uint16_t slot);
 uint16_t player_game_over(uint16_t player, uint16_t slot);
 void count_players_in_game(void);
+void CONSOLE_ORIGINAL(count_players_in_game)(void);
 void award_enemy_points(void);
 
 /* players/reactions.c: what touches a player each frame: pickups, weapons, blows by their strength, another player's team-up */
@@ -2916,6 +2930,7 @@ void player_break_team(uint16_t player);
 
 /* players/second_sprite.c: each player's second sprite (balloons, thrown things) */
 uint16_t players_update_second_sprites(void);
+uint16_t CONSOLE_ORIGINAL(players_update_second_sprites)(void);
 void player_second_sprite_run(uint16_t object);
 void player_second_sprite_follow(uint16_t object);
 void player_second_sprite_match_speeds(uint16_t object);
@@ -3729,6 +3744,7 @@ void unused_vector_collide_with_list_1_objects(uint16_t object);
 void vector_find_free_slot(uint16_t list_number, uint16_t *p_u, uint32_t *p_slot_found);
 uint32_t vector_queue_sound(uint16_t command);
 uint32_t remove_off_screen(uint16_t object, uint32_t carry);
+uint32_t CONSOLE_ORIGINAL(remove_off_screen)(uint16_t object, uint32_t carry);
 void find_nearest_player(uint16_t object, uint16_t *p_nearest, uint16_t *p_nearest_result, uint32_t *p_player_found);
 uint32_t vector_queue_sound_unless_attract(uint16_t command);
 void vector_clear_objects(uint16_t *p_x, uint16_t *p_u);
@@ -3864,7 +3880,9 @@ void draw_layer_b_column(void);
 void draw_layer_a_row(void);
 void draw_layer_b_row(void);
 void draw_layer_columns(uint16_t layer_and_columns, uint16_t *p_layer_map, uint16_t *p_tile_place);
+void CONSOLE_ORIGINAL(draw_layer_columns)(uint16_t layer_and_columns, uint16_t *p_layer_map, uint16_t *p_tile_place);
 uint16_t draw_layer_columns_with_floor_map(uint16_t layer_and_columns);
+uint16_t CONSOLE_ORIGINAL(draw_layer_columns_with_floor_map)(uint16_t layer_and_columns);
 void draw_tile_picture(uint16_t picture_number);
 void find_layer_column(uint16_t *p_map_cell, uint16_t *p_tile_place, uint16_t *p_strip_and_block_column);
 void find_layer_row(uint16_t *p_map_cell, uint16_t *p_tile_place, uint16_t *p_strip_and_block_row);
@@ -3940,6 +3958,7 @@ void move_objects(void);
 void sort_objects_by_depth(void);
 void set_step_sprite_priority(void);
 uint16_t draw_object(uint16_t object, uint16_t sprites);
+uint16_t CONSOLE_ORIGINAL(draw_object)(uint16_t object, uint16_t sprites);
 void story_1_bart_steps_overrun(void);
 uint16_t write_object_sprites(uint16_t object, uint16_t sprite, uint16_t list);
 void borrow_object_for_sprites(uint16_t *p_object, uint32_t *p_object_borrowed);

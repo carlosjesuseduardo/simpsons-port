@@ -4,7 +4,7 @@
  *                 it, its frames drawn and its sound made
  *    Version:     0.1.0
  *    Created:     06-11-2026
- *    Modified:    06-11-2026
+ *    Modified:    13-11-2026
  *    Author:      Sebastian Toyos
  *
  *    license:BSD-3-Clause
@@ -39,14 +39,27 @@ static void frame(void)
 		game_frame_done();
 }
 
-const char *game_load(const char *folder)
-{
-	/* (the programs' data as its pieces only, by the places the programs know it by: no image of the ROM) */
-	const game_assets_memory into[GAME_ASSETS_REGIONS] = {
-		{ NULL, NULL }, { NULL, NULL }, { game_tiles, NULL }, { game_sprites, NULL }, { game_samples, NULL },
-		{ game_eeprom, NULL } };
+/* Where the assets go: the programs' data as its pieces only, by the places the programs know it by (no image of
+   the ROM), the video's, the samples' and the EEPROM's memories */
+static const game_assets_memory g_into[GAME_ASSETS_REGIONS] = {
+	{ NULL, NULL }, { NULL, NULL }, { game_tiles, NULL }, { game_sprites, NULL }, { game_samples, NULL },
+	{ game_eeprom, NULL } };
 
-	return game_assets_load_into(folder, into);
+const char *game_load(const char *assets)
+{
+	if (game_assets_is_pack(assets))
+		return game_assets_pack_load_into(assets, g_into);
+	return game_assets_load_into(assets, g_into);
+}
+
+const char *game_load_rom_set(const char *source)
+{
+	return game_assets_rom_set_load_into(source, g_into);
+}
+
+void game_set_draw(bool draw)
+{
+	g_draw = draw;
 }
 
 const char *game_reset(bool service, bool draw)
@@ -91,6 +104,11 @@ const int16_t *game_audio(size_t *count)
 uint32_t game_audio_rate(void)
 {
 	return simpsons_sound_mix_rate();
+}
+
+void game_set_stereo(bool stereo)
+{
+	simpsons_sound_stereo = stereo;
 }
 
 uint64_t game_sound_samples_hash(void)

@@ -1,0 +1,130 @@
+# Simpsons APK
+
+`Simpsons APK` (`Simpsons APK.exe` on Windows) makes the Android games' APKs on the player's computer, as
+`Simpsons NSP` makes the Switch's `.nsp`s: each game's Android build with the assets of the player's ROM set,
+signed with a key of the player's own. It makes both at once, `The Simpsons.apk` and `The Simpsons Arcade.apk`
+beside it.
+Nothing it reads or writes leaves the computer, and the APKs are their player's alone: **never share them**.
+
+## Making the APK (for players)
+
+You need:
+
+- `simpsons.zip`, MAME's ROM set of *The Simpsons* (`simpsons`, 4 Players World), or a folder of its files;
+- the tool, with the `android` folder beside it, which holds `simpsons-base.apk` and `simpsons-arcade-base.apk`:
+  the games' Android builds, without the assets and without a signature; and `font.bmp`, its window's
+  letters.
+
+Start the tool (a double click). Its window shows what the APK will be made of, each with its state (found,
+not found, or what is wrong with it):
+
+- **ROM set**: `simpsons.zip` beside the tool;
+- **Launcher icon**: a square PNG or JPEG of yours, at most 2048 x 2048, which the launcher shows whole, its
+  shape cutting the corners: `icon.jpg` beside the tool (taken by itself, by Simpsons NSP too) or one dropped
+  on the window; else the game's own (the project's: Homer at the window, ports/android/res);
+- **TV banner**: a PNG or JPEG of yours wider than tall, at most 2048 wide, which Android TV and Google TV show as
+  16:9 in their apps (the Chromecast with Google TV's): `banner.jpg` beside the tool or one dropped on the window
+  (a dropped picture wider than tall is the banner, else the icon); else the game's own (the project's, Homer at the
+  window: ports/android/res/drawable-xhdpi/banner.png);
+- **The game's Android build**: `simpsons-base.apk` in the folder `android` beside the tool (The Simpsons Arcade's,
+  `simpsons-arcade-base.apk`, beside it);
+- **Signing key**: yours, kept from before, or made with the first APK (below);
+- **Output folder**: where `The Simpsons.apk` and `The Simpsons Arcade.apk` go, beside the tool unless you choose
+  another.
+
+Drop your files on the window and it takes each by what it is: an `.apk` is the game's Android build, a
+`.png` or `.jpg` the icon, anything else the ROM set (`simpsons.zip`, or a folder of its files). **Choose the
+output folder** opens your system's folder dialog; **Make The Simpsons.apk**, or Enter, makes it: the window
+shows the step it is at, then the APK's size, or what failed.
+
+Files dropped on the tool itself, not on its window, are taken the same way, and it makes the APK at once in
+its console. With options, from a command line, it is a console program and nothing else:
+
+```
+Simpsons APK --rom simpsons.zip --icon my_icon.png --banner my_banner.jpg --base android/simpsons-base.apk --out The Simpsons.apk
+```
+
+When it cannot show its window (no display, no `font.bmp` beside it, a build without SDL2), the tool started
+with nothing makes the APK at once with the defaults, in its console.
+
+Copy `The Simpsons.apk` to the phone and open it there (Android asks once to allow installing from that app),
+or install it from the computer with `adb install -r The Simpsons.apk`.
+
+### The signing key
+
+Android installs an APK over the one installed only when both are signed with the same key. The first time,
+the tool makes a key of yours with the system's random generator, and keeps it in your own folder:
+`%APPDATA%\The Simpsons` on Windows, `~/Library/Application Support/The Simpsons` on macOS, `$XDG_CONFIG_HOME/The Simpsons`
+(`~/.config/The Simpsons`) on Linux. There are two files: `apk_key.pk8`, the private key (PKCS #8), and
+`apk_key.x509.der`, its certificate. Every APK the tool makes signs with them, so each installs over the last
+and the game keeps what it wrote (its settings, the EEPROM, TIME ATTACK's times). Keep them, and never share
+them: with another key, the game has to be uninstalled before an APK installs, and what it wrote goes with
+it. The tool never replaces a key it cannot read; it stops and says so.
+
+An APK built with `android.cmake` is signed with the computer's debug key, not with yours: uninstall it
+before the first APK of the tool. `apksigner` takes the same key (`--key apk_key.pk8 --cert apk_key.x509.der`).
+
+## How the APK is made
+
+`Simpsons APK` writes the zip and its signature itself, in C, from their documentation (PKWARE's
+APPNOTE.TXT, Android's APK Signature Scheme v2, FIPS-186-4, RFC 6979) and from what `zipalign` and
+`apksigner` write and check (none of their code):
+
+1. It reads the ROM set through the assets' layout as the computer's first run does (`game_load_rom_set`) and
+   writes the pack as Simpsons NSP does (`ports/switch/nsp/rom_pack.c`, `game_assets_pack_write`): the same
+   `simpsons.assets`, byte for byte.
+2. It reads `simpsons-base.apk` as a zip, by its central directory, and leaves out any signature it has
+   (`META-INF`'s `MANIFEST.MF`, `.SF`, `.RSA`, `.DSA` and `.EC`; an APK Signing Block) and any assets pack.
+3. With an icon of yours, the build's icon entries take it: `res/mipmap-anydpi-v26/ic_launcher.xml`, the
+   launcher's adaptive icon, takes the bytes of `ic_launcher_own.xml` beside it (compiled XML, whole in
+   itself: an adaptive icon whose background is `ic_launcher_art` inset by 18 dp), and
+   `res/mipmap-xxxhdpi-v4/ic_launcher_art.png` and `ic_launcher.png` (the legacy icon) your picture's
+   (Android's decoders tell a PNG from a JPEG by its bytes, whatever the entry's name). A build without
+   those entries does not take an icon, and the tool says so. With a TV banner of yours,
+   `res/drawable-xhdpi-v4/banner.png` (the manifest's `android:banner`) takes your picture's bytes the same way.
+4. **The APK**: the build's entries, copied packed as they are (the libraries of both ABIs, `arm64-v8a` and
+   `armeabi-v7a`: Android installs the one its device runs), then `assets/simpsons.assets`, stored (the
+   game reads it in place, through Android's asset manager). Each stored entry's data starts at a multiple
+   of 4, a library's (`.so`) at 4096, as `zipalign -p 4` aligns them: apksigner's alignment field (0xD935)
+   in its local header.
+5. **Its signature**, APK Signature Scheme v2: the SHA-256 of each 1 MB of the entries, of the central
+   directory and of the end record, then the SHA-256 of those; signed with ECDSA on P-256 with SHA-256 (its
+   nonce RFC 6979's), with the certificate and the public key, in the APK Signing Block before the central
+   directory. Android takes v2 from 7.0 (API 24, the game's least), so there is no v1 (JAR) signature.
+
+The tool checks its SHA-256, HMAC-SHA256 and ECDSA against FIPS-180-4's, RFC 4231's and RFC 6979's vectors
+each time it starts, and the APK's signature before it writes it. The same inputs and key make the same APK,
+byte for byte, on any computer.
+
+## Building
+
+`Simpsons APK` is part of the computer build (the target `simpsons_apk_maker`):
+
+```bash
+cmake --build build/cmake --config Release --target simpsons_apk_maker
+```
+
+Its window is built where the game's is, with SDL2 (with `font.bmp`, and on Windows `SDL2.dll` unless SDL2 is
+built in); without SDL2 the tool is its command line alone. It lands in `build/bin/`, beside
+`build/bin/android/`, so from the repository it makes the APK at once:
+
+```bash
+"build/bin/Simpsons APK" --rom rom
+```
+
+An APK is checked with the SDK's own tools: `apksigner verify --verbose --min-sdk-version 24 "The Simpsons.apk"`
+and `zipalign -c -p 4 "The Simpsons.apk"`.
+
+| File | |
+|---|---|
+| `main.c` | the tool's command line; started with nothing, its window |
+| `make_apk.c` | the APK from its inputs, for the command line and the window: the build's entries, the icon, the assets; the inputs' defaults |
+| `zip.c` | the zip: the build's entries read, the APK's written aligned |
+| `sign.c` | APK Signature Scheme v2: the digests, the signed data, the APK Signing Block |
+| `key.c` | the player's key: made once, kept as PKCS #8 with a self-signed X.509 certificate, read back |
+| `ecdsa.c` | ECDSA on P-256 with SHA-256 (RFC 6979's nonce) and HMAC-SHA256; SHA-256 is Simpsons NSP's (`ports/switch/nsp/crypto.c`) |
+| `window.c` | the window (SDL2, with Kenney Mini's letters, `ports/sdl2/letters.c`, and Simpsons NSP's folder dialog, `ports/switch/nsp/folder_dialog.c`) |
+
+Nothing of the game, the ROM set, the key or the player's own icon is in this repository: the APK is made on
+the player's computer, from the player's files. The Simpsons is a trademark of its owner, and the arcade game is
+Konami's; this project is not affiliated with or endorsed by either, nor by Google.

@@ -12,3 +12,6 @@ __pycache__/
 .claude/settings.local.json
 .claude/scheduled_tasks.lock
 CLAUDE.md
+
+# The player's own pictures for the icons, and keys: never in the repository
+local/

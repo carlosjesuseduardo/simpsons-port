@@ -3,7 +3,7 @@
  *    Description: an object's setup and hit box, gravity and landing, the screen's edges
  *    Version:     0.1.0
  *    Created:     06-11-2026
- *    Modified:    11-11-2026
+ *    Modified:    13-11-2026
  *    Author:      Sebastian Toyos
  *
  *    The Simpsons (arcade, Konami 1991): the game's 053248 program decompiled into C by
@@ -151,7 +151,7 @@ void set_hit_box(uint16_t object, uint16_t box)
 
 /* Stops the object's x speed when it is more than 48 pixels off either side of the screen (objects' x
    runs 40-17F across it). */
-void stop_beyond_screen_edge(uint16_t object)
+void CONSOLE_ORIGINAL(stop_beyond_screen_edge)(uint16_t object)
 {
 	uint16_t screen_x = 0;
 
@@ -165,7 +165,7 @@ void stop_beyond_screen_edge(uint16_t object)
 
 /* Removes the object once it is more than 64 pixels off either side of the screen; an enemy also lets go
    of its target, and one with no life left is marked defeated. */
-uint16_t enemy_remove_off_screen(uint16_t object, uint16_t target)
+uint16_t CONSOLE_ORIGINAL(enemy_remove_off_screen)(uint16_t object, uint16_t target)
 {
 	uint8_t vitality = 0;
 	uint16_t screen_x = 0;
@@ -185,7 +185,7 @@ uint16_t enemy_remove_off_screen(uint16_t object, uint16_t target)
 }
 
 /* Whether the enemy is on the screen, 16 pixels in from its edges (carry set). */
-uint32_t enemy_on_screen(uint16_t object)
+uint32_t CONSOLE_ORIGINAL(enemy_on_screen)(uint16_t object)
 {
 	uint32_t on_screen = 0;
 	uint16_t screen_x = 0;

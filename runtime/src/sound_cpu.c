@@ -3,7 +3,7 @@
  *    Description: runs the decompiled sound program on the sound board's time: the Z80's timing model
  *    Version:     0.1.0
  *    Created:     06-11-2026
- *    Modified:    06-11-2026
+ *    Modified:    13-11-2026
  *    Author:      Sebastian Toyos
  *
  *    license:BSD-3-Clause
@@ -40,6 +40,7 @@
 #include "sound_internal.h"
 
 #include "sound.h"
+#include "simpsons/state.h"
 
 #include <setjmp.h>
 #include <stdio.h>
@@ -240,4 +241,26 @@ uint16_t check_rom(void)
 	z80_block(71);
 	program_rom_sum = 0x072Eu;
 	return sound_main();
+}
+
+/* ---- a save state's part ---- */
+
+/* Between two of the board's runs of the program (sound_cpu_run returns at its main loop's top: nothing of the
+   program's is on the C stack), the Z80 is its time, its interrupts' state and lines, and its program's own variables
+   (the rest is its RAM: the sound board's part); loop_top is this run's */
+void sound_cpu_state(struct simpsons_state *state)
+{
+	simpsons_state_part(state, "sound cpu");
+	simpsons_state_bytes(state, &z80.clock, sizeof(z80.clock));
+	simpsons_state_bytes(state, &z80.access, sizeof(z80.access));
+	simpsons_state_bytes(state, &z80.nmi_from, sizeof(z80.nmi_from));
+	simpsons_state_bytes(state, &z80.interrupts, sizeof(z80.interrupts));
+	simpsons_state_bytes(state, &z80.after_ei, sizeof(z80.after_ei));
+	simpsons_state_bytes(state, &z80.line, sizeof(z80.line));
+	simpsons_state_bytes(state, &z80.running, sizeof(z80.running));
+	simpsons_state_bytes(state, &z80.in_program, sizeof(z80.in_program));
+	simpsons_state_bytes(state, &program_rom_sum, sizeof(program_rom_sum));
+	simpsons_state_bytes(state, &sample_rom_1_sum, sizeof(sample_rom_1_sum));
+	simpsons_state_bytes(state, &sample_rom_2_sum, sizeof(sample_rom_2_sum));
+	simpsons_state_bytes(state, &self_test_failures, sizeof(self_test_failures));
 }

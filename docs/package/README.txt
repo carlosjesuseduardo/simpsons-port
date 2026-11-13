@@ -1,0 +1,86 @@
+The Simpsons Arcade and The Simpsons
+====================================
+
+Konami's The Simpsons (1991), the arcade game for four players, as a native game: decompiled to C and
+checked frame by frame against MAME, github.com/cheviman/simpsons-port. Nothing of the game comes in
+this package: it takes the game's graphics and sounds out of your own ROM set.
+
+Two games come in it, the same program:
+- The Simpsons Arcade, the arcade game as it is: coins, the test mode, the four players, its EEPROM.
+- The Simpsons, the console version: the game made for playing at home, with menus of its own and no
+  coins (START brings a player in).
+
+They are "The Simpsons Arcade.exe" and "The Simpsons.exe" on Windows, "The Simpsons Arcade.app" and
+"The Simpsons.app" on macOS, and "The Simpsons Arcade" and "The Simpsons" on Linux. On macOS each comes
+in a package of its own: simpsons-macos-universal.zip has The Simpsons, and
+simpsons-arcade-macos-universal.zip The Simpsons Arcade.
+
+What you need
+-------------
+simpsons.zip, MAME's ROM set of The Simpsons (4 Players World, set 1), as MAME has it. Put it beside
+the games, or drop it on the game's window when it asks for it; a folder rom beside the games with the
+set's files (or simpsons.zip) in it works too. Keep the games' pictures (font.bmp, input_prompts.bmp)
+beside them: the window that asks for the set and The Simpsons' menus write with them (on macOS they
+are inside the .apps).
+
+The first time a game starts it takes the game's graphics, sounds and data out of the ROM set (in
+less than a second) into one file, simpsons.assets, and keeps it: beside the games on Windows, in
+~/.local/share/The Simpsons on Linux, in ~/Library/Application Support/The Simpsons on macOS. From then
+on both games start from it and never open the ROM set again. A new version of the games makes it
+again from the ROM set when it needs to (keep simpsons.zip where it was, or drop it on the window
+again). simpsons.assets comes from your ROM set, so it is yours alone: never share it.
+
+macOS: the .apps are not signed with a certificate. The first time, open one with a right click and
+Open (on macOS 15 and later: System Settings, Privacy & Security, Open Anyway).
+Linux: start "./The Simpsons Arcade" or "./The Simpsons" from the folder; the games need SDL2's usual
+libraries of a desktop (X11 or Wayland, ALSA or PulseAudio), which they load themselves.
+
+What the games keep goes in the same folder as simpsons.assets: controls.ini (each player's keys and
+buttons, both games), simpsons.ini (The Simpsons' OPTIONS), simpsons.nv (The Simpsons Arcade's EEPROM:
+the test mode's settings), and on Windows the logs when the games were started from Explorer
+(simpsons.log, simpsons-arcade.log).
+
+Playing The Simpsons Arcade
+---------------------------
+The arcade game as it is: four players, each with a coin slot. A coin and the attack button bring a
+player in: player 1 is Marge, 2 Homer, 3 Bart, 4 Lisa. The test mode's settings (F2, the cabinet's
+test switch) are kept from one game to the next, as the cabinet's EEPROM keeps them.
+
+  Move (player 1)            the arrow keys
+  Attack, jump               Z or left Ctrl; X or left Alt
+  Coins 1-4                  5, 6, 7, 8
+  Test switch                F2 (held: the test mode's menu)
+  Full screen                F11 or Alt+Enter
+  Pixels                     F3: sharp, smooth, bilinear, CRT
+  Quit                       Escape
+
+Players 2 to 4 have keys of their own (as MAME's), which controls.ini changes. Game controllers are
+players 1 to 4 in the order they are plugged in: the pad or the left stick moves, A attacks, B jumps,
+Back puts a coin in. A controller the games do not know, or know wrong, takes its line
+(SDL_GameControllerDB's format) in gamecontrollerdb.txt, beside the games or in the folder of what
+they keep: its line goes over their own.
+
+Playing The Simpsons
+--------------------
+The menu: ARCADE (the arcade game at home), MR. PLOW MODE (the console's own modes: coming), OPTIONS
+(each player's CONTROLS; the cabinet's DIFFICULTY, LIVES, DEMO SOUND and SCREEN; VIDEO: the window's
+size, full screen, the pixels, INTEGER SCALE, VSYNC, FPS; the VOLUME; kept in simpsons.ini), EXIT. In a
+game, START brings in another player; Escape, a controller's Back or START of a player in the game
+pauses it (CONTINUE, RESTART, QUIT GAME).
+
+  Move (player 1)            the arrow keys
+  Attack, jump               Z or left Ctrl; X or left Alt
+  START                      Enter
+  In the menus               the arrows move, Enter or attack picks, Escape goes back
+
+Licenses
+--------
+LICENSE.txt is the project's (BSD-3-Clause). licenses/ holds MAME's and ymfm's (BSD-3-Clause: the
+board's video and sound follow their behavior and tables), SDL2's (zlib: the window, the sound and the
+controls, inside the games), SDL_GameControllerDB's (zlib: the game controllers' mappings, inside the
+games) and Kenney's (CC0: Kenney Mini, the letters of the window that asks for the ROM set; Input
+Prompts Pixel, the keys and buttons on The Simpsons' CONTROLS page).
+
+No data of the game is in this package: no graphics, sound, music or program byte of the ROM set.
+The Simpsons is a trademark of its owner, and the arcade game is Konami's; this project is not
+affiliated with or endorsed by either.

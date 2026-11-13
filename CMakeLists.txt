@@ -2,10 +2,51 @@
 # Description: build of The Simpsons: the game (from its assets, in a window or headless) and its development tools
 # Version:     0.1.0
 # Created:     05-11-2026
-# Modified:    11-11-2026
+# Modified:    13-11-2026
 # Author:      Sebastian Toyos
 cmake_minimum_required(VERSION 3.20)
-project(simpsons C CXX)
+project(simpsons VERSION 0.1.0 LANGUAGES C CXX)    # (the port's release: The Simpsons' OPTIONS shows it)
+
+# A generator of one configuration (Makefiles, Ninja: Linux's and macOS's by default) given no build type builds the
+# game optimized, as the packages are (outrunners-port's: without, it is slower)
+get_property(SIMPSONS_MULTI_CONFIG GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)
+if(NOT SIMPSONS_MULTI_CONFIG AND NOT CMAKE_BUILD_TYPE)
+	set(CMAKE_BUILD_TYPE Release CACHE STRING "The build type: Release unless given" FORCE)
+endif()
+
+# The testing builds' suffix to the version The Simpsons' OPTIONS shows (-TEST and the CI run's number), from the
+# environment's SIMPSONS_VERSION_SUFFIX unless given
+set(SIMPSONS_VERSION_SUFFIX "$ENV{SIMPSONS_VERSION_SUFFIX}" CACHE STRING "The suffix of the version OPTIONS shows")
+
+# The packages a player downloads carry SDL2 inside the games, built from its own source (tmnt-port's): the package is
+# the executables alone, no library beside them. Its source: SIMPSONS_SDL2_SOURCE where this computer has one (a
+# copy of SDL's release-2.32.10, build/downloads/SDL2-src), else SDL's repository at that tag
+option(SIMPSONS_STATIC_SDL2 "Build SDL2 from its source into the executables" OFF)
+set(SIMPSONS_SDL2_SOURCE ${CMAKE_SOURCE_DIR}/build/downloads/SDL2-src CACHE PATH "SDL2's source (release-2.32.10)")
+
+# The devices (ports/PLAN.md, D), as tmnt-port's: the Nintendo Switch with devkitPro's toolchain
+# (aarch64-none-elf-cmake: ports/switch/switch.cmake), Anbernic's H700 handhelds on their stock firmware with the
+# toolchain ports/anbernic/zig_aarch64.cmake (ports/anbernic/anbernic.cmake), Android with the NDK's toolchain
+# (ports/android/android.cmake). A device builds the two games alone (its own targets: simpsons_switch_games,
+# simpsons_anbernic_games, simpsons_apks), from the assets pack a maker put in or the one it makes from the player's
+# ROM set on the device; no window of the first run, no makers
+if(NINTENDO_SWITCH OR CMAKE_SYSTEM_NAME STREQUAL "NintendoSwitch")
+	set(SIMPSONS_SWITCH ON)
+	set(SIMPSONS_DEVICE ON)
+elseif(ANDROID)
+	set(SIMPSONS_ANDROID ON)
+	set(SIMPSONS_DEVICE ON)
+endif()
+option(SIMPSONS_ANBERNIC "Build for Anbernic's H700 handhelds (ports/anbernic/anbernic.cmake)" OFF)
+if(SIMPSONS_ANBERNIC)
+	set(SIMPSONS_DEVICE ON)
+endif()
+# iOS and iPadOS: Xcode's toolchain through CMake's Xcode generator (CMAKE_SYSTEM_NAME iOS: ports/ios/ios.cmake, its
+# target simpsons_ios_games)
+if(CMAKE_SYSTEM_NAME STREQUAL "iOS")
+	set(SIMPSONS_IOS ON)
+	set(SIMPSONS_DEVICE ON)
+endif()
 
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
@@ -21,6 +62,12 @@ endforeach()
 if(MSVC)
 	add_compile_options(/W3 /utf-8)
 	add_compile_definitions(_CRT_SECURE_NO_WARNINGS)
+	# with SIMPSONS_STATIC_SDL2 the C runtime goes inside the executables too: they need no Visual C++
+	# redistributable on the player's machine
+	if(SIMPSONS_STATIC_SDL2)
+		set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+		set(CMAKE_POLICY_DEFAULT_CMP0091 NEW)    # (SDL2's targets too)
+	endif()
 endif()
 
 # The game's executables nest their calls as the program's do (a jump to another function is a call that returns,
@@ -40,13 +87,14 @@ function(simpsons_game_stack target)
 	endif()
 endfunction()
 
-# The board as the program sees it (memory map, banks, interrupts, the EEPROM), the controls' scripts, and the
-# ROM set's regions
+# The board as the program sees it (memory map, banks, interrupts, the EEPROM), the controls' scripts, the ROM set's
+# regions, and a save state's file and parts (runtime/src/state.c, simpsons/state.h: each part visits its own)
 add_library(simpsons_runtime STATIC
 	runtime/src/machine.c
 	runtime/src/sound.c
 	runtime/src/script.c
 	runtime/src/game_data.c
+	runtime/src/state.c
 )
 target_include_directories(simpsons_runtime PUBLIC runtime/include PRIVATE runtime/src)
 
@@ -54,7 +102,8 @@ target_include_directories(simpsons_runtime PUBLIC runtime/include PRIVATE runti
 add_library(simpsons_inflate STATIC runtime/src/inflate.c)
 target_include_directories(simpsons_inflate PUBLIC runtime/src)
 
-# The reader of the player's ROM set: for the tools that run the original code, never for the game
+# The reader of the player's ROM set: for the tools that run the original code, and for the game's first run, which
+# takes from it only what the assets give (the assets pack's block below)
 add_library(simpsons_rom_set STATIC runtime/src/rom_set.c)
 target_link_libraries(simpsons_rom_set PUBLIC simpsons_runtime simpsons_inflate)
 target_include_directories(simpsons_rom_set PRIVATE runtime/src)
@@ -161,28 +210,334 @@ else()
 	message(STATUS "No generated program in build/generated (tools/recompile.py): no game")
 endif()
 
-# The game in a window (ports/sdl2): the decompiled program where src/ has it (SIMPSONS_WINDOW_PROGRAM), else the
-# translation scaffold; SDL2 from the system, or on Windows the development package unpacked in
-# build/downloads/sdl2, its library beside the executable
-if(SIMPSONS_WINDOW_PROGRAM)
-	set(SIMPSONS_SDL2_UNPACKED "")
-	if(WIN32)
-		file(GLOB SIMPSONS_SDL2_UNPACKED ${CMAKE_SOURCE_DIR}/build/downloads/sdl2/SDL2-*/cmake)
+# The assets pack (simpsons.assets, runtime/src/assets_pack.c): what the assets load as one file, for the devices; and
+# the same load from the player's ROM set straight, through the assets' layout (runtime/src/assets_layout.c: places
+# and lengths only, which simpsons_assets_check --write-layout writes from the assets folder), so the ROM set's reader
+# is the game's first run too. The pack's version is the layout's and the names and places of the tables both
+# programs' C reads by name: the decompiled program's registry (src/table.c) and the sound program's, the sound
+# program's alone for the translation scaffold. simpsons_assets_check (ports/headless/assets_check.c) checks that the
+# folder's pack and the ROM set's are the same, byte for byte. Each game's library (runtime/src/game.c: game_load takes
+# a folder or a pack, game_load_rom_set the ROM set) links the pack of its own program
+function(simpsons_add_assets_pack target program)
+	add_library(${target} STATIC runtime/src/assets_pack.c runtime/src/assets_layout.c)
+	target_include_directories(${target} PRIVATE runtime/src)
+	target_link_libraries(${target} PUBLIC simpsons_assets simpsons_rom_set simpsons_sound ${program})
+endfunction()
+if(TARGET simpsons_game_decompiled)
+	simpsons_add_assets_pack(simpsons_assets_pack simpsons_game_program)
+	target_link_libraries(simpsons_game_decompiled PUBLIC simpsons_assets_pack)
+	target_link_libraries(simpsons_game_headless PRIVATE simpsons_assets_pack)
+	add_executable(simpsons_assets_check ports/headless/assets_check.c)
+	target_link_libraries(simpsons_assets_check PRIVATE simpsons_assets_pack simpsons_game_decompiled)
+endif()
+if(TARGET simpsons_game)
+	simpsons_add_assets_pack(simpsons_assets_pack_scaffold "")
+	target_compile_definitions(simpsons_assets_pack_scaffold PRIVATE SIMPSONS_TRANSLATION_SCAFFOLD)
+	target_link_libraries(simpsons_game PUBLIC simpsons_assets_pack_scaffold)
+	target_link_libraries(simpsons_headless PRIVATE simpsons_assets_pack_scaffold)
+endif()
+
+# The console version (The Simpsons, console/PLAN.md): the same decompiled game with the console's own versions of
+# the functions console/replaced.txt lists (console/*.c, SIMPSONS_CONSOLE: their originals are the decompiled C's
+# CONSOLE_ORIGINAL definitions, original_name there), its menus written with the game's own letters. Its OPTIONS show
+# the version (SIMPSONS_VERSION: the project's, and SIMPSONS_VERSION_SUFFIX)
+file(GLOB SIMPSONS_CONSOLE_SOURCES CONFIGURE_DEPENDS ${CMAKE_SOURCE_DIR}/console/*.c)
+if(SIMPSONS_DECOMPILED AND SIMPSONS_CONSOLE_SOURCES)
+	# (and its save states, from the pause: runtime/src/game_state.c, game/state.h)
+	add_library(simpsons_console_program STATIC runtime/src/game_program.c runtime/src/konami_ops.c
+		runtime/src/board_game.c runtime/src/game_state.c ${SIMPSONS_DECOMPILED} ${SIMPSONS_CONSOLE_SOURCES})
+	target_include_directories(simpsons_console_program PUBLIC runtime/include console PRIVATE ${SIMPSONS_DECOMPILED_DIR})
+	target_compile_definitions(simpsons_console_program PUBLIC SIMPSONS_CONSOLE
+		SIMPSONS_VERSION="${PROJECT_VERSION}${SIMPSONS_VERSION_SUFFIX}")
+	target_link_libraries(simpsons_console_program PUBLIC simpsons_runtime)
+	if(MSVC)
+		target_compile_options(simpsons_console_program PRIVATE /bigobj /wd4244 /wd4146 /wd4102)
+	else()
+		target_compile_options(simpsons_console_program PRIVATE -fno-strict-aliasing)
 	endif()
-	find_package(SDL2 CONFIG QUIET HINTS ${SIMPSONS_SDL2_UNPACKED})
-	if(SDL2_FOUND)
+	add_library(simpsons_console_game STATIC runtime/src/game.c)
+	target_link_libraries(simpsons_console_game PUBLIC simpsons_console_program simpsons_video simpsons_sound
+		simpsons_assets)
+	# (its pack's version: the same layout and the same src/table.c as The Simpsons Arcade's, so the same pack)
+	simpsons_add_assets_pack(simpsons_assets_pack_console simpsons_console_program)
+	target_link_libraries(simpsons_console_game PUBLIC simpsons_assets_pack_console)
+endif()
+
+# SDL_GameControllerDB (ports/sdl2/controllerdb, zlib License): the community's mappings of game controllers, this
+# platform's lines built into the window port's games (a player's report on tmnt-port: an Nvidia Shield's PS4 and Xbox
+# controllers). SIMPSONS_CONTROLLER_DB to whatever links it: main.c gives SDL the mappings as it starts. The Switch and
+# the Anbernic keep their own controls
+if(SIMPSONS_WINDOW_PROGRAM AND NOT SIMPSONS_SWITCH AND NOT SIMPSONS_ANBERNIC)
+	if(ANDROID)
+		set(SIMPSONS_CONTROLLER_PLATFORM "Android")
+	elseif(CMAKE_SYSTEM_NAME STREQUAL "iOS")
+		set(SIMPSONS_CONTROLLER_PLATFORM "iOS")
+	elseif(APPLE)
+		set(SIMPSONS_CONTROLLER_PLATFORM "Mac OS X")
+	elseif(WIN32)
+		set(SIMPSONS_CONTROLLER_PLATFORM "Windows")
+	else()
+		set(SIMPSONS_CONTROLLER_PLATFORM "Linux")
+	endif()
+	set(SIMPSONS_CONTROLLER_DB_C ${CMAKE_BINARY_DIR}/controller_db.c)
+	add_custom_command(OUTPUT ${SIMPSONS_CONTROLLER_DB_C}
+		COMMAND ${CMAKE_COMMAND} -DDB=${CMAKE_SOURCE_DIR}/ports/sdl2/controllerdb/gamecontrollerdb.txt
+			"-DPLATFORM=${SIMPSONS_CONTROLLER_PLATFORM}" -DOUT=${SIMPSONS_CONTROLLER_DB_C}
+			-P ${CMAKE_SOURCE_DIR}/ports/sdl2/controllerdb/embed.cmake
+		DEPENDS ${CMAKE_SOURCE_DIR}/ports/sdl2/controllerdb/gamecontrollerdb.txt
+			${CMAKE_SOURCE_DIR}/ports/sdl2/controllerdb/embed.cmake
+		COMMENT "SDL_GameControllerDB's mappings for ${SIMPSONS_CONTROLLER_PLATFORM}"
+		VERBATIM)
+	add_library(simpsons_controller_db STATIC ${SIMPSONS_CONTROLLER_DB_C})
+	set_target_properties(simpsons_controller_db PROPERTIES POSITION_INDEPENDENT_CODE ON)
+	target_compile_definitions(simpsons_controller_db INTERFACE SIMPSONS_CONTROLLER_DB)
+endif()
+
+# The games in a window (ports/sdl2): The Simpsons Arcade, the decompiled program where src/ has it
+# (SIMPSONS_WINDOW_PROGRAM), else the translation scaffold; and The Simpsons, the console version. SDL2 from the
+# system, or on Windows the development package unpacked in build/downloads/sdl2, its library beside the executables;
+# or, with SIMPSONS_STATIC_SDL2, SDL2 built from its own source into them. On a device, the device's own build
+if(SIMPSONS_WINDOW_PROGRAM AND SIMPSONS_SWITCH)
+	include(ports/switch/switch.cmake)
+elseif(SIMPSONS_WINDOW_PROGRAM AND SIMPSONS_ANBERNIC)
+	include(ports/anbernic/anbernic.cmake)
+elseif(SIMPSONS_WINDOW_PROGRAM AND SIMPSONS_ANDROID)
+	include(ports/android/android.cmake)
+elseif(SIMPSONS_WINDOW_PROGRAM AND SIMPSONS_IOS)
+	include(ports/ios/ios.cmake)
+endif()
+if(SIMPSONS_WINDOW_PROGRAM AND NOT SIMPSONS_DEVICE)
+	if(SIMPSONS_STATIC_SDL2)
+		include(FetchContent)
+		if(EXISTS ${SIMPSONS_SDL2_SOURCE}/CMakeLists.txt)
+			set(FETCHCONTENT_SOURCE_DIR_SDL2 ${SIMPSONS_SDL2_SOURCE})
+		endif()
+		FetchContent_Declare(SDL2 GIT_REPOSITORY https://github.com/libsdl-org/SDL.git GIT_TAG release-2.32.10
+			GIT_SHALLOW TRUE)
+		set(SDL_SHARED OFF CACHE BOOL "" FORCE)
+		set(SDL_STATIC ON CACHE BOOL "" FORCE)
+		set(SDL_TEST OFF CACHE BOOL "" FORCE)
+		set(SDL_FORCE_STATIC_VCRT ON CACHE BOOL "" FORCE)    # (MSVC: the C runtime inside, as the game's)
+		set(SDL_CCACHE OFF CACHE BOOL "" FORCE)
+		FetchContent_MakeAvailable(SDL2)
+		set(SIMPSONS_SDL2 SDL2::SDL2-static)
+		set(SIMPSONS_SDL2_LICENSE ${sdl2_SOURCE_DIR}/LICENSE.txt)
+		set(SDL2_FOUND TRUE)
+	else()
+		set(SIMPSONS_SDL2_UNPACKED "")
+		if(WIN32)
+			file(GLOB SIMPSONS_SDL2_UNPACKED ${CMAKE_SOURCE_DIR}/build/downloads/sdl2/SDL2-*/cmake)
+		endif()
+		find_package(SDL2 CONFIG QUIET HINTS ${SIMPSONS_SDL2_UNPACKED})
 		set(SIMPSONS_SDL2 SDL2::SDL2)
+		file(GLOB SIMPSONS_SDL2_LICENSE ${CMAKE_SOURCE_DIR}/build/downloads/sdl2/SDL2-*/LICENSE.txt)
+	endif()
+	if(SDL2_FOUND)
 		if(TARGET SDL2::SDL2main)
 			list(APPEND SIMPSONS_SDL2 SDL2::SDL2main)
 		endif()
-		add_executable(simpsons WIN32 ports/sdl2/main.c)
-		target_link_libraries(simpsons PRIVATE ${SIMPSONS_WINDOW_PROGRAM} ${SIMPSONS_SDL2})
-		simpsons_game_stack(simpsons)
-		if(WIN32)
-			add_custom_command(TARGET simpsons POST_BUILD
-				COMMAND ${CMAKE_COMMAND} -E copy_if_different $<TARGET_FILE:SDL2::SDL2> $<TARGET_FILE_DIR:simpsons>)
+
+		# the executables' icon on Windows, which SDL gives the windows too: the project's (ports/sdl2/icon/simpsons.ico,
+		# Homer at the window, the picture Sebas chose for the computers and the devices, made of simpsons.png by
+		# make_ico.py), or a picture of the player's own where this computer has one (SIMPSONS_PC_ICON, else
+		# local/icon_pc.png: local/ holds the player's own pictures, never committed), made an .ico here
+		# (ports/sdl2/icon/make_ico.py, Pillow's)
+		set(SIMPSONS_PC_ICON "" CACHE FILEPATH "The executables' icon on Windows: a picture of the player's own")
+		set(SIMPSONS_PC_PICTURE ${SIMPSONS_PC_ICON})
+		if(NOT SIMPSONS_PC_PICTURE AND EXISTS ${CMAKE_SOURCE_DIR}/local/icon_pc.png)
+			set(SIMPSONS_PC_PICTURE ${CMAKE_SOURCE_DIR}/local/icon_pc.png)
+		endif()
+		set(SIMPSONS_ICON_RC "")
+		if(WIN32 AND SIMPSONS_PC_PICTURE AND Python3_FOUND)
+			# (made as CMake configures: again when the picture changes)
+			set(SIMPSONS_OWN_ICON ${CMAKE_BINARY_DIR}/icon)
+			execute_process(COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/ports/sdl2/icon/make_ico.py
+				${SIMPSONS_PC_PICTURE} ${SIMPSONS_OWN_ICON}/own_icon.ico RESULT_VARIABLE SIMPSONS_OWN_ICON_MADE)
+			set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS ${SIMPSONS_PC_PICTURE})
+			if(SIMPSONS_OWN_ICON_MADE EQUAL 0)
+				file(WRITE ${SIMPSONS_OWN_ICON}/own_icon.rc
+					"// the player's own picture (CMakeLists.txt)\n1 ICON \"own_icon.ico\"\n")
+				set(SIMPSONS_ICON_RC ${SIMPSONS_OWN_ICON}/own_icon.rc)
+				message(STATUS "The executables' icon: ${SIMPSONS_PC_PICTURE}")
+			else()
+				message(WARNING "${SIMPSONS_PC_PICTURE} could not be made an icon (ports/sdl2/icon/make_ico.py, Pillow)")
+			endif()
+		endif()
+		if(WIN32 AND NOT SIMPSONS_ICON_RC)
+			# (the project's: no Pillow needed)
+			set(SIMPSONS_OWN_ICON ${CMAKE_BINARY_DIR}/icon)
+			file(TO_CMAKE_PATH ${CMAKE_SOURCE_DIR}/ports/sdl2/icon/simpsons.ico SIMPSONS_PROJECT_ICO)
+			file(WRITE ${SIMPSONS_OWN_ICON}/project_icon.rc
+				"// the project's icon (CMakeLists.txt)\n1 ICON \"${SIMPSONS_PROJECT_ICO}\"\n")
+			set(SIMPSONS_ICON_RC ${SIMPSONS_OWN_ICON}/project_icon.rc)
+			message(STATUS "The executables' icon: ports/sdl2/icon/simpsons.ico")
+		endif()
+
+		# A computer's check of Android's touch screen and its WIDE by the screen's shape (never a player's build): the
+		# games with the touch controls drawn (ports/sdl2/touch.c, SIMPSONS_TOUCH) and main.c's --screen WIDTHxHEIGHT,
+		# which writes each screen --video-dump names as it is presented (SIMPSONS_TOUCH_CHECK), with SDL's dummy video
+		option(SIMPSONS_TOUCH_CHECK "Build the games with Android's touch controls, to check them on a computer" OFF)
+
+		# a game's executable: the window port around 'program', with its first run (ports/sdl2/first_run.c: the assets
+		# pack out of the player's ROM set, its window written with Kenney Mini, CC0, ports/sdl2/font); its icon; its
+		# pictures (font.bmp, and the CONTROLS page's input_prompts.bmp) beside it, in the .app's Resources on macOS (a
+		# bundle, 'identifier' its own: SDL_GetBasePath finds them there), and on Linux the icon's picture beside it
+		# (ports/sdl2/icon/simpsons.png: the desktop entries take it); SDL2's library
+		# beside it unless it is inside; the game's stack
+		function(simpsons_window target name identifier program)
+			add_executable(${target} WIN32 MACOSX_BUNDLE ports/sdl2/main.c ports/sdl2/first_run.c ports/sdl2/controls.c
+				ports/sdl2/letters.c)
+			target_include_directories(${target} PRIVATE ports/sdl2)
+			target_link_libraries(${target} PRIVATE ${program} simpsons_controller_db ${SIMPSONS_SDL2})
+			set_target_properties(${target} PROPERTIES OUTPUT_NAME ${name}
+				MACOSX_BUNDLE_BUNDLE_NAME ${name} MACOSX_BUNDLE_GUI_IDENTIFIER ${identifier}
+				MACOSX_BUNDLE_SHORT_VERSION_STRING ${PROJECT_VERSION} MACOSX_BUNDLE_BUNDLE_VERSION ${PROJECT_VERSION})
+			simpsons_game_stack(${target})
+			if(SIMPSONS_TOUCH_CHECK)
+				target_sources(${target} PRIVATE ports/sdl2/touch.c)
+				target_compile_definitions(${target} PRIVATE SIMPSONS_TOUCH SIMPSONS_TOUCH_CHECK)
+			endif()
+			if(SIMPSONS_ICON_RC)
+				target_sources(${target} PRIVATE ${SIMPSONS_ICON_RC})
+			endif()
+			if(APPLE)
+				target_sources(${target} PRIVATE ports/sdl2/font/font.bmp ports/sdl2/prompts/input_prompts.bmp)
+				set_source_files_properties(ports/sdl2/font/font.bmp ports/sdl2/prompts/input_prompts.bmp
+					PROPERTIES MACOSX_PACKAGE_LOCATION Resources)
+				if(EXISTS ${CMAKE_SOURCE_DIR}/ports/sdl2/icon/simpsons.icns)
+					target_sources(${target} PRIVATE ports/sdl2/icon/simpsons.icns)
+					set_source_files_properties(ports/sdl2/icon/simpsons.icns PROPERTIES MACOSX_PACKAGE_LOCATION Resources)
+					set_target_properties(${target} PROPERTIES MACOSX_BUNDLE_ICON_FILE simpsons.icns)
+				endif()
+				# (first_run.c's app_folder: the folder a translocated .app was put in, CoreFoundation's URLs)
+				target_link_libraries(${target} PRIVATE "-framework CoreFoundation")
+			else()
+				add_custom_command(TARGET ${target} POST_BUILD
+					COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_SOURCE_DIR}/ports/sdl2/font/font.bmp
+						${CMAKE_SOURCE_DIR}/ports/sdl2/prompts/input_prompts.bmp $<TARGET_FILE_DIR:${target}>)
+			endif()
+			if(NOT WIN32 AND NOT APPLE)
+				target_link_libraries(${target} PRIVATE m)    # (main.c's)
+				if(EXISTS ${CMAKE_SOURCE_DIR}/ports/sdl2/icon/simpsons.png)
+					add_custom_command(TARGET ${target} POST_BUILD
+						COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_SOURCE_DIR}/ports/sdl2/icon/simpsons.png
+							$<TARGET_FILE_DIR:${target}>)
+				endif()
+			endif()
+			if(WIN32 AND NOT SIMPSONS_STATIC_SDL2)
+				add_custom_command(TARGET ${target} POST_BUILD
+					COMMAND ${CMAKE_COMMAND} -E copy_if_different $<TARGET_FILE:SDL2::SDL2> $<TARGET_FILE_DIR:${target}>)
+			endif()
+		endfunction()
+
+		# The Simpsons Arcade, the arcade game as it is: its EEPROM kept (simpsons.nv), its players' controls in
+		# controls.ini
+		simpsons_window(simpsons "The Simpsons Arcade" io.github.cheviman.simpsons-arcade ${SIMPSONS_WINDOW_PROGRAM})
+		# The Simpsons, the console version: its settings in simpsons.ini, OPTIONS > CONTROLS drawing the keys and
+		# buttons with Kenney's Input Prompts Pixel (CC0, ports/sdl2/prompts)
+		if(TARGET simpsons_console_game)
+			simpsons_window(simpsons_console "The Simpsons" io.github.cheviman.simpsons simpsons_console_game)
+		endif()
+
+		# The devices' makers (tmnt-port's), which the player runs on a computer with the player's own ROM set: its
+		# assets pack as the first run makes it (ports/switch/nsp/rom_pack.c: the decompiled game's ROM set reader and
+		# pack writer, so the devices' version), never a byte of the set in them. Simpsons NSP (ports/switch/nsp): The
+		# Simpsons' and The Simpsons Arcade's .nsps out of the Switch build's pieces (the folder switch beside it), the
+		# pack and the player's console keys. Simpsons Anbernic (ports/anbernic/maker): the folder PORTS for an Anbernic
+		# H700 handheld's card out of the games' Anbernic build (the folder anbernic beside it) and the pack. Console
+		# programs (SDL2 without SDL2main) whose window opens when they are started with nothing, its letters
+		# (font.bmp) beside them; the folder dialog COM's on Windows
+		if(TARGET simpsons_game_decompiled)
+			list(GET SIMPSONS_SDL2 0 SIMPSONS_SDL2_LIBRARY)
+			function(simpsons_maker target name definition)
+				add_executable(${target} ${ARGN} ports/switch/nsp/rom_pack.c ports/switch/nsp/folder_dialog.c
+					ports/sdl2/letters.c)
+				target_include_directories(${target} PRIVATE ports/switch/nsp ports/sdl2)
+				target_compile_definitions(${target} PRIVATE ${definition})
+				target_link_libraries(${target} PRIVATE simpsons_game_decompiled ${SIMPSONS_SDL2_LIBRARY})
+				set_target_properties(${target} PROPERTIES OUTPUT_NAME ${name})
+				if(WIN32)
+					target_link_libraries(${target} PRIVATE ole32 shell32 uuid)
+				endif()
+				add_custom_command(TARGET ${target} POST_BUILD
+					COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_SOURCE_DIR}/ports/sdl2/font/font.bmp
+						$<TARGET_FILE_DIR:${target}>)
+				if(WIN32 AND NOT SIMPSONS_STATIC_SDL2)
+					add_custom_command(TARGET ${target} POST_BUILD
+						COMMAND ${CMAKE_COMMAND} -E copy_if_different $<TARGET_FILE:SDL2::SDL2> $<TARGET_FILE_DIR:${target}>)
+				endif()
+			endfunction()
+			simpsons_maker(simpsons_nsp "Simpsons NSP" SIMPSONS_NSP_WINDOW ports/switch/nsp/main.c
+				ports/switch/nsp/make_nsp.c ports/switch/nsp/crypto.c ports/switch/nsp/formats.c ports/switch/nsp/window.c)
+			simpsons_maker(simpsons_anbernic_maker "Simpsons Anbernic" SIMPSONS_ANBERNIC_WINDOW
+				ports/anbernic/maker/main.c ports/anbernic/maker/make_ports.c ports/anbernic/maker/window.c)
+			target_compile_definitions(simpsons_anbernic_maker PRIVATE
+				[[FOLDER_TITLE="The folder for PORTS (the card's Roms)"]])
+			# Simpsons APK (ports/android/apk, tmnt-port's): The Simpsons' and The Simpsons Arcade's APKs out of the
+			# Android build (android/simpsons-base.apk and simpsons-arcade-base.apk beside it), the pack and the player's
+			# icon and TV banner, signed with a key of the player's own made once (v2's signature: no Java nor Android SDK
+			# on the player's computer; BCryptGenRandom draws the key on Windows)
+			simpsons_maker(simpsons_apk_maker "Simpsons APK" SIMPSONS_APK_WINDOW ports/android/apk/main.c
+				ports/android/apk/make_apk.c ports/android/apk/zip.c ports/android/apk/sign.c ports/android/apk/key.c
+				ports/android/apk/ecdsa.c ports/switch/nsp/crypto.c ports/android/apk/window.c)
+			target_compile_definitions(simpsons_apk_maker PRIVATE
+				[[FOLDER_TITLE="The folder for The Simpsons.apk and The Simpsons Arcade.apk"]])
+			if(WIN32)
+				target_link_libraries(simpsons_apk_maker PRIVATE bcrypt)
+			endif()
+		endif()
+
+		# The Windows package (simpsons_package): what a player downloads, package/simpsons-windows-x64.zip in the build
+		# folder (SIMPSONS_PACKAGE_DIR), a folder simpsons with The Simpsons Arcade.exe and The Simpsons.exe (SDL2
+		# inside them with SIMPSONS_STATIC_SDL2, else SDL2.dll beside them), the pictures they write with (font.bmp,
+		# input_prompts.bmp), the package's README.txt (docs/package), the project's LICENSE.txt, and licenses/ with the
+		# terms of what is in it or what it follows: MAME's and ymfm's (the board's video and sound), SDL2's,
+		# SDL_GameControllerDB's and Kenney's. The two games alone; nothing of the ROM set
+		set(SIMPSONS_PACKAGE_DIR ${CMAKE_BINARY_DIR}/package CACHE PATH "Where simpsons_package writes the package")
+		if(WIN32 AND TARGET simpsons_console)
+			set(SIMPSONS_PACKAGE_NAME simpsons-windows-x64)
+			set(SIMPSONS_PACKED ${SIMPSONS_PACKAGE_DIR}/simpsons)
+			set(SIMPSONS_PACKED_SDL2 "")
+			if(NOT SIMPSONS_STATIC_SDL2)
+				set(SIMPSONS_PACKED_SDL2 COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:SDL2::SDL2> ${SIMPSONS_PACKED})
+			endif()
+			set(SIMPSONS_PACKED_SDL2_LICENSE "")
+			if(SIMPSONS_SDL2_LICENSE)
+				list(GET SIMPSONS_SDL2_LICENSE 0 SIMPSONS_SDL2_LICENSE_FILE)
+				set(SIMPSONS_PACKED_SDL2_LICENSE COMMAND ${CMAKE_COMMAND} -E copy ${SIMPSONS_SDL2_LICENSE_FILE}
+					${SIMPSONS_PACKED}/licenses/SDL2.txt)
+			endif()
+			file(MAKE_DIRECTORY ${SIMPSONS_PACKAGE_DIR})
+			add_custom_target(simpsons_package
+				COMMAND ${CMAKE_COMMAND} -E rm -rf ${SIMPSONS_PACKED} ${SIMPSONS_PACKAGE_DIR}/${SIMPSONS_PACKAGE_NAME}.zip
+				COMMAND ${CMAKE_COMMAND} -E make_directory ${SIMPSONS_PACKED}/licenses
+				COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:simpsons> $<TARGET_FILE:simpsons_console>
+					${CMAKE_SOURCE_DIR}/ports/sdl2/font/font.bmp ${CMAKE_SOURCE_DIR}/ports/sdl2/prompts/input_prompts.bmp
+					${SIMPSONS_PACKED}
+				${SIMPSONS_PACKED_SDL2}
+				COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_SOURCE_DIR}/docs/package/README.txt ${SIMPSONS_PACKED}/README.txt
+				COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_SOURCE_DIR}/LICENSE ${SIMPSONS_PACKED}/LICENSE.txt
+				COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_SOURCE_DIR}/docs/package/licenses/MAME.txt
+					${SIMPSONS_PACKED}/licenses/MAME.txt
+				COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_SOURCE_DIR}/tools/core/konami/reference/ymfm/LICENSE
+					${SIMPSONS_PACKED}/licenses/ymfm.txt
+				${SIMPSONS_PACKED_SDL2_LICENSE}
+				COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_SOURCE_DIR}/ports/sdl2/controllerdb/LICENSE
+					${SIMPSONS_PACKED}/licenses/SDL_GameControllerDB.txt
+				COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_SOURCE_DIR}/ports/sdl2/font/License.txt
+					${SIMPSONS_PACKED}/licenses/Kenney-Mini.txt
+				COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_SOURCE_DIR}/ports/sdl2/prompts/License.txt
+					${SIMPSONS_PACKED}/licenses/Kenney-Input-Prompts.txt
+				COMMAND ${CMAKE_COMMAND} -E tar cf ${SIMPSONS_PACKAGE_NAME}.zip --format=zip simpsons
+				WORKING_DIRECTORY ${SIMPSONS_PACKAGE_DIR}
+				DEPENDS simpsons simpsons_console
+				COMMENT "Packing The Simpsons Arcade and The Simpsons: ${SIMPSONS_PACKAGE_NAME}.zip"
+				VERBATIM)
 		endif()
 	else()
-		message(STATUS "No SDL2: the window port (simpsons) is not built")
+		message(WARNING "No SDL2: the games (The Simpsons Arcade and The Simpsons) are not built, only the development "
+			"tools. -DSIMPSONS_STATIC_SDL2=ON builds SDL2 from its source into the games, as the packages do; or SDL2 "
+			"from the system, on Windows its development package for Visual C++ unpacked in build/downloads/sdl2 "
+			"(build/downloads/sdl2/SDL2-2.x.y/cmake)")
 	endif()
 endif()

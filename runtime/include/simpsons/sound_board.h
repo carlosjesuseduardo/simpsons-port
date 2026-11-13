@@ -4,7 +4,7 @@
  *                 model, the YM2151 and the K053260
  *    Version:     0.1.0
  *    Created:     06-11-2026
- *    Modified:    06-11-2026
+ *    Modified:    13-11-2026
  *    Author:      Sebastian Toyos
  *
  *    license:BSD-3-Clause
@@ -92,9 +92,20 @@ uint64_t simpsons_sound_state_hash(void);
 void simpsons_sound_source_hashes(uint64_t hashes[2]);
 
 /* The frame's samples mixed as MAME's routes do (the YM2151's first output to both sides at 0.5, the K053260's
-   two to theirs at 0.5), stereo, at the chips' rate */
+   two to theirs at 0.5), stereo, at the chips' rate; with simpsons_sound_stereo, the YM2151's two outputs each to its
+   own side */
 const int16_t *simpsons_sound_mix(size_t *count);
 uint32_t simpsons_sound_mix_rate(void);
+
+/* The YM2151's outputs in the mix. The board wires only its first (left) output, to both sides of the speaker
+   (simpsons.cpp: "only left channel is connected"), so the music's FM channels the program pans right alone (its EF
+   02) are heard nowhere; false, the default, is that. True mixes the chip's two outputs as a stereo board would: the
+   left to the left side and the right to the right, each at the board's 0.5, so every channel comes out on each side
+   it is panned to at the level the board gives it (a centred one as on the board on both sides; one panned to a side,
+   there alone), and the K053260 against them as on the board. The left side is the board's either way. The Simpsons'
+   SOUND: STEREO; The Simpsons Arcade never sets it. The hashes are the chips' samples, not the mix: the same either
+   way. A setting: the sound board's power on (simpsons_sound_init) keeps it */
+extern bool simpsons_sound_stereo;
 
 /* The Z80's time: the cycles of the timing model so far */
 uint64_t simpsons_sound_z80_cycles(void);

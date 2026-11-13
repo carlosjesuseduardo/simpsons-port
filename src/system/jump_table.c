@@ -3,7 +3,7 @@
  *    Description: the fixed program's entry points for the banks (an LBRA each) and the routines the decompiler folded into them
  *    Version:     0.1.0
  *    Created:     06-11-2026
- *    Modified:    11-11-2026
+ *    Modified:    13-11-2026
  *    Author:      Sebastian Toyos
  *
  *    The Simpsons (arcade, Konami 1991): the game's 053248 program decompiled into C by
@@ -904,7 +904,7 @@ uint32_t vector_queue_sound(uint16_t command)
 }
 
 /* Removes the object when its x is outside 0040-01BF; carry while it is inside. */
-uint32_t remove_off_screen(uint16_t object, uint32_t carry)
+uint32_t CONSOLE_ORIGINAL(remove_off_screen)(uint16_t object, uint32_t carry)
 {
 	uint16_t window_x = 0;
 	uint16_t object_x = 0;

@@ -3,10 +3,12 @@
  *    Description: the game's assets loaded back into the board's memories (game/assets.h)
  *    Version:     0.1.0
  *    Created:     06-11-2026
- *    Modified:    06-11-2026
+ *    Modified:    13-11-2026
  *    Author:      Sebastian Toyos
  *
  *    license:BSD-3-Clause
+ *    A load gives its bytes a span at a time (assets_internal.h): what the regions were given is kept as their
+ *    spans, and the programs' data as its pieces, for the pack (assets_pack.c) to write and to load back the same.
  *    The formats are the extractor's (tools/extract_assets.py and the modules it names), read back as its --check
  *    reads them:
  *      tiles/tiles.txt, sprites/sprites.txt   each sheet's codes in its order, the sheet a 4-bit indexed PNG of
@@ -31,6 +33,7 @@
  */
 #include "game/assets.h"
 
+#include "assets_internal.h"
 #include "game/data.h"
 #include "music.h"
 #include "png.h"
@@ -193,19 +196,120 @@ const uint8_t *game_assets_sound_at(uint32_t place)
 	return kept_at(&g_kept[GAME_ASSETS_SOUND], place);
 }
 
-/* 'data' at 'place' of a region, and its bytes given; a program's data is kept as a piece too */
+/* ---- what a load gave: each region's spans ---- */
+
+typedef struct
+{
+	game_assets_span *spans;
+	size_t count, capacity;
+} span_list;
+
+static span_list g_spans[GAME_ASSETS_REGIONS];      /* the memories': each give's, then merged; the programs' pieces */
+static uint8_t *g_memory[GAME_ASSETS_REGIONS];      /* the memories the last load filled */
+static int g_loaded;                                /* the last load is over, and gave all it had to */
+
+static int add_span(span_list *list, uint32_t place, uint32_t length)
+{
+	if (!length)
+		return 1;
+	list->spans = grow(list->spans, &list->capacity, list->count + 1, sizeof(game_assets_span));
+	if (!list->spans)
+		return fail("no memory for the assets' spans");
+	list->spans[list->count].place = place;
+	list->spans[list->count++].length = length;
+	return 1;
+}
+
+static int by_span_place(const void *first, const void *second)
+{
+	const game_assets_span *a = first, *b = second;
+
+	return a->place < b->place ? -1 : a->place > b->place ? 1 : a->length < b->length ? -1 : a->length > b->length;
+}
+
+/* The load's spans settled: the memories' in order, those that meet or touch made one; the programs' their pieces */
+static int settle_spans(void)
+{
+	for (int region = 0; region < GAME_ASSETS_REGIONS; region++)
+	{
+		span_list *list = &g_spans[region];
+
+		if (region == GAME_ASSETS_PROGRAM || region == GAME_ASSETS_SOUND)
+		{
+			list->count = 0;
+			for (size_t index = 0; index < g_kept[region].count; index++)
+				if (!add_span(list, g_kept[region].pieces[index].place, g_kept[region].pieces[index].size))
+					return 0;
+			continue;
+		}
+		if (list->count)
+		{
+			size_t settled = 0;
+
+			qsort(list->spans, list->count, sizeof(game_assets_span), by_span_place);
+			for (size_t index = 1; index < list->count; index++)
+			{
+				game_assets_span *last = &list->spans[settled];
+				const uint32_t end = last->place + last->length;
+
+				if (list->spans[index].place <= end)
+				{
+					if (list->spans[index].place + list->spans[index].length > end)
+						last->length = list->spans[index].place + list->spans[index].length - last->place;
+				}
+				else
+					list->spans[++settled] = list->spans[index];
+			}
+			list->count = settled + 1;
+		}
+	}
+	return 1;
+}
+
+size_t game_assets_loaded_spans(game_assets_region region, const game_assets_span **spans)
+{
+	if (!g_loaded || region >= GAME_ASSETS_REGIONS)
+	{
+		*spans = NULL;
+		return 0;
+	}
+	*spans = g_spans[region].spans;
+	return g_spans[region].count;
+}
+
+const uint8_t *assets_span_bytes(game_assets_region region, size_t index)
+{
+	if (!g_loaded || region >= GAME_ASSETS_REGIONS || index >= g_spans[region].count)
+		return NULL;
+	if (region == GAME_ASSETS_PROGRAM || region == GAME_ASSETS_SOUND)
+		return g_kept[region].pieces[index].data;
+	return g_memory[region] ? g_memory[region] + g_spans[region].spans[index].place : NULL;
+}
+
+/* 'data' at 'place' of a region, and its bytes given; a program's data is kept as a piece too, a memory's as a span */
 static int give(const game_assets_memory *into, game_assets_region region, uint32_t place, const uint8_t *data,
 	size_t length)
 {
 	if (place > REGIONS[region].size || length > REGIONS[region].size - place)
 		return fail("a piece past the %s region's end (%X)", REGIONS[region].name, (unsigned)place);
-	if ((region == GAME_ASSETS_PROGRAM || region == GAME_ASSETS_SOUND) && !keep(&g_kept[region], place, data, length))
+	if (region == GAME_ASSETS_PROGRAM || region == GAME_ASSETS_SOUND)
+	{
+		if (!keep(&g_kept[region], place, data, length))
+			return 0;
+	}
+	else if (!add_span(&g_spans[region], place, (uint32_t)length))
 		return 0;
 	if (into[region].memory)
 		memcpy(into[region].memory + place, data, length);
 	if (into[region].given)
 		memset(into[region].given + place, 1, length);
 	return 1;
+}
+
+int assets_give(const game_assets_memory into[GAME_ASSETS_REGIONS], game_assets_region region, uint32_t place,
+	const uint8_t *data, size_t length)
+{
+	return region < GAME_ASSETS_REGIONS ? give(into, region, place, data, length) : fail("no such region");
 }
 
 /* ---- files and their lines ---- */
@@ -1420,31 +1524,55 @@ static int read_eeprom(const char *folder, const game_assets_memory *into)
 
 /* ---- all of them ---- */
 
-const char *game_assets_load_into(const char *folder, const game_assets_memory into[GAME_ASSETS_REGIONS])
+const char *assets_problem(void)
+{
+	return g_problem[0] ? g_problem : "the assets do not load";
+}
+
+const char *assets_begin(const game_assets_memory into[GAME_ASSETS_REGIONS])
 {
 	g_problem[0] = 0;
+	g_loaded = 0;
+	for (int region = 0; region < GAME_ASSETS_REGIONS; region++)
+		/* (the programs' data may be kept as pieces only: game_assets_program_at, game_assets_sound_at) */
+		if (!into[region].memory && region != GAME_ASSETS_PROGRAM && region != GAME_ASSETS_SOUND)
+			return "a region has no memory to load into";
 	for (int region = 0; region < GAME_ASSETS_REGIONS; region++)
 	{
+		g_memory[region] = into[region].memory;
+		g_spans[region].count = 0;
 		if (!into[region].memory)
-		{
-			/* (the programs' data may be kept as pieces only: game_assets_program_at, game_assets_sound_at) */
-			if (region != GAME_ASSETS_PROGRAM && region != GAME_ASSETS_SOUND)
-				return "a region has no memory to load into";
 			continue;
-		}
 		memset(into[region].memory, 0, REGIONS[region].size);
 		if (into[region].given)
 			memset(into[region].given, 0, REGIONS[region].size);
 	}
 	forget_kept(&g_kept[GAME_ASSETS_PROGRAM]);
 	forget_kept(&g_kept[GAME_ASSETS_SOUND]);
+	return NULL;
+}
+
+const char *assets_end(void)
+{
+	if (!order_kept(&g_kept[GAME_ASSETS_PROGRAM], "data") || !order_kept(&g_kept[GAME_ASSETS_SOUND], "sound_data")
+		|| !settle_spans())
+		return assets_problem();
+	g_loaded = 1;
+	return NULL;
+}
+
+const char *game_assets_load_into(const char *folder, const game_assets_memory into[GAME_ASSETS_REGIONS])
+{
+	const char *problem = assets_begin(into);
+
+	if (problem)
+		return problem;
 	if (!read_sheets(folder, "tiles", GAME_ASSETS_TILES, 8, TILE_COLUMNS, TILE_BYTES, into)
 		|| !read_sheets(folder, "sprites", GAME_ASSETS_SPRITES, 16, SPRITE_COLUMNS, SPRITE_BYTES, into)
 		|| !read_samples(folder, into) || !read_program_data(folder, into) || !read_sound_data(folder, into)
-		|| !read_eeprom(folder, into) || !order_kept(&g_kept[GAME_ASSETS_PROGRAM], "data")
-		|| !order_kept(&g_kept[GAME_ASSETS_SOUND], "sound_data"))
-		return g_problem[0] ? g_problem : "the assets do not load";
-	return NULL;
+		|| !read_eeprom(folder, into))
+		return assets_problem();
+	return assets_end();
 }
 
 const char *game_assets_load(const char *folder)

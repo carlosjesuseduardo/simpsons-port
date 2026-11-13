@@ -4,7 +4,7 @@
  *                 frame's hashes and mix
  *    Version:     0.1.0
  *    Created:     06-11-2026
- *    Modified:    06-11-2026
+ *    Modified:    13-11-2026
  *    Author:      Sebastian Toyos
  *
  *    license:BSD-3-Clause
@@ -18,6 +18,7 @@
 #include "sound_internal.h"
 
 #include "game/data.h"
+#include "simpsons/state.h"
 #include "sound/support.h"
 
 #include <stdio.h>
@@ -376,6 +377,8 @@ uint64_t simpsons_sound_z80_cycles(void)
 
 /* ---- the frame ---- */
 
+bool simpsons_sound_stereo;
+
 static uint64_t g_frame_samples_hash;
 static uint64_t g_source_hashes[2];
 static int16_t *g_mix;
@@ -433,7 +436,8 @@ void simpsons_sound_end_frame(uint64_t time)
 	g_source_hashes[1] = hash_bytes(g_pcm_samples.taken, g_pcm_samples.taken_count * sizeof(float), 0xcbf29ce484222325ull);
 
 	/* the mix (simpsons.cpp's routes to its stereo speaker): the YM2151's first output to both sides at 0.5, the
-	   K053260's two to theirs at 0.5 */
+	   K053260's two to theirs at 0.5; with simpsons_sound_stereo the YM2151's second output on the right side instead,
+	   at the same 0.5 */
 	count = (g_fm_samples.taken_count < g_pcm_samples.taken_count ? g_fm_samples.taken_count : g_pcm_samples.taken_count) / 2;
 	if (g_mix_capacity < count * 2)
 	{
@@ -443,12 +447,16 @@ void simpsons_sound_end_frame(uint64_t time)
 			out_of_memory();
 	}
 	g_mix_count = 0;
-	for (size_t index = 0; index < count; index++)
 	{
-		const float fm = g_fm_samples.taken[index * 2];
+		const size_t right = simpsons_sound_stereo ? 1u : 0u;    /* the YM2151's output on the right side */
 
-		g_mix[g_mix_count++] = to_sample(0.5f * fm + 0.5f * g_pcm_samples.taken[index * 2]);
-		g_mix[g_mix_count++] = to_sample(0.5f * fm + 0.5f * g_pcm_samples.taken[index * 2 + 1]);
+		for (size_t index = 0; index < count; index++)
+		{
+			const float *fm = &g_fm_samples.taken[index * 2];
+
+			g_mix[g_mix_count++] = to_sample(0.5f * fm[0] + 0.5f * g_pcm_samples.taken[index * 2]);
+			g_mix[g_mix_count++] = to_sample(0.5f * fm[right] + 0.5f * g_pcm_samples.taken[index * 2 + 1]);
+		}
 	}
 }
 
@@ -481,4 +489,62 @@ const int16_t *simpsons_sound_mix(size_t *count)
 uint32_t simpsons_sound_mix_rate(void)
 {
 	return (uint32_t)(SIMPSONS_SOUND_CLOCK / SAMPLE_CLOCKS);
+}
+
+/* ---- a save state's part ---- */
+
+/* A chip's samples made ahead of the board's frame (the Z80 may be a pass ahead), and their numbers; the frame's taken
+   ones are its mix, made again at the next frame's end */
+static void samples_state(simpsons_state *state, samples *source)
+{
+	uint64_t count = source->count;
+
+	simpsons_state_bytes(state, &source->first, sizeof(source->first));
+	simpsons_state_bytes(state, &source->made, sizeof(source->made));
+	simpsons_state_count(state, &count, sizeof(float));
+	if (simpsons_state_loading(state))
+	{
+		if (count > source->capacity)
+		{
+			source->capacity = (size_t)count + 1024u;
+			source->data = (float *)realloc(source->data, source->capacity * sizeof(float));
+			if (!source->data)
+				out_of_memory();
+		}
+		source->count = (size_t)count;
+	}
+	simpsons_state_more(state, source->data, (size_t)count * sizeof(float));
+}
+
+/* The board's RAM, bank and answers, its chips (their pointers this run's: the YM2151's host and its channels'
+   operators, the K053260's sample ROM), their samples ahead, the chips' times, and the Z80's part */
+void simpsons_sound_state(simpsons_state *state)
+{
+	static simpsons_sound_board kept;
+
+	simpsons_state_part(state, "sound board");
+	if (simpsons_state_loading(state))
+		kept = simpsons_sound;
+	simpsons_state_bytes(state, &simpsons_sound, sizeof(simpsons_sound));
+	if (simpsons_state_loading(state))
+	{
+		simpsons_sound.answers_to_board = kept.answers_to_board;
+		simpsons_sound.fm.host = kept.fm.host;
+		simpsons_sound.fm.set_timer = kept.fm.set_timer;
+		simpsons_sound.fm.set_busy_end = kept.fm.set_busy_end;
+		simpsons_sound.fm.is_busy = kept.fm.is_busy;
+		simpsons_sound.fm.update_irq = kept.fm.update_irq;
+		for (int channel = 0; channel < SIMPSONS_YM2151_CHANNELS; channel++)
+			memcpy(simpsons_sound.fm.channels[channel].operators, kept.fm.channels[channel].operators,
+				sizeof(kept.fm.channels[channel].operators));
+		simpsons_sound.pcm.rom = kept.pcm.rom;
+		simpsons_sound.pcm.rom_size = kept.pcm.rom_size;
+	}
+	samples_state(state, &g_fm_samples);
+	samples_state(state, &g_pcm_samples);
+	simpsons_state_bytes(state, &g_now_override, sizeof(g_now_override));
+	simpsons_state_bytes(state, g_deadline, sizeof(g_deadline));
+	simpsons_state_bytes(state, &g_busy_until, sizeof(g_busy_until));
+	simpsons_state_bytes(state, &g_timer_steps, sizeof(g_timer_steps));
+	sound_cpu_state(state);
 }

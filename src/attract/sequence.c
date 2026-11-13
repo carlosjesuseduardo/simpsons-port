@@ -3,7 +3,7 @@
  *    Description: the attract mode: its scenes until a credit starts the game
  *    Version:     0.1.0
  *    Created:     06-11-2026
- *    Modified:    11-11-2026
+ *    Modified:    13-11-2026
  *    Author:      Sebastian Toyos
  *
  *    The Simpsons (arcade, Konami 1991): the game's 053248 program decompiled into C by
@@ -13,7 +13,7 @@
 
 /* The game's state 1, at each frame: with no credits runs the attract's scene (a coin skips to its scene
    5), with credits starts the game (state 2). */
-void attract(uint16_t u)
+void CONSOLE_ORIGINAL(attract)(uint16_t u)
 {
 	uint8_t credits_high = 0;
 	uint16_t slot_1_credit_count = 0, slot_2_credit_count = 0, slot_3_credit_count = 0, slot_4_credit_count = 0, credit_count = 0;

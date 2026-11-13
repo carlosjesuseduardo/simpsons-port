@@ -3,7 +3,7 @@
  *    Description: the 053248 program as a port runs it: its reset, its run, the frames it makes
  *    Version:     0.1.0
  *    Created:     06-11-2026
- *    Modified:    06-11-2026
+ *    Modified:    13-11-2026
  *    Author:      Sebastian Toyos
  *
  *    license:BSD-3-Clause
@@ -37,6 +37,11 @@ uint32_t program_interrupts(void);
 /* Whether the CPU's CC masks the IRQ (its I), where the program waits for its next frame: the board then holds the
    sprite DMA's FIRQ for the IRQ handler's FIRQ point (simpsons_frame_vblank) */
 bool program_irq_masked(void);
+
+/* The wait the program is in while the port has its frame (program_frame): simpsons/frame.h's SIMPSONS_FRAME_WAIT
+   (the main loop's), SIMPSONS_BOOT_WAIT or SIMPSONS_SWITCH_WAIT (the boot's); 0 out of the port's frame. The
+   decompiled program's (game_program.c) */
+uint32_t program_waiting_at(void);
 
 #ifdef __cplusplus
 }

@@ -4,7 +4,7 @@
  *                 interrupts, the EEPROM, the video chips' memories and registers
  *    Version:     0.1.0
  *    Created:     05-11-2026
- *    Modified:    05-11-2026
+ *    Modified:    13-11-2026
  *    Author:      Sebastian Toyos
  *
  *    license:BSD-3-Clause
@@ -25,6 +25,7 @@
 #include <string.h>
 
 simpsons_machine simpsons_board;
+void (*simpsons_eeprom_written)(void);
 
 static uint64_t now(void)
 {
@@ -113,6 +114,8 @@ static void eeprom_execute_command(simpsons_eeprom *eeprom)
 		memset(eeprom->data, 0xFF, sizeof(eeprom->data));
 		eeprom->busy_until = now() + EEPROM_ERASE_ALL_BUSY;
 		eeprom->state = EEPROM_WAIT_FOR_COMPLETION;
+		if (simpsons_eeprom_written)
+			simpsons_eeprom_written();
 		break;
 	default:
 		/* (MAME stops the machine here: the ER5911 has no such command) */
@@ -177,6 +180,8 @@ static void eeprom_event(int event)
 					eeprom->data[eeprom->address & (SIMPSONS_EEPROM_SIZE - 1u)] = (uint8_t)eeprom->shift;
 					eeprom->busy_until = now() + EEPROM_WRITE_BUSY;
 					eeprom->state = EEPROM_WAIT_FOR_COMPLETION;
+					if (simpsons_eeprom_written)
+						simpsons_eeprom_written();
 				}
 			}
 		}

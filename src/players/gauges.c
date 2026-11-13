@@ -3,7 +3,7 @@
  *    Description: the top line: scores, lives, health gauges, credits, CONTINUE?, GAME OVER
  *    Version:     0.1.0
  *    Created:     06-11-2026
- *    Modified:    11-11-2026
+ *    Modified:    13-11-2026
  *    Author:      Sebastian Toyos
  *
  *    The Simpsons (arcade, Konami 1991): the game's 053248 program decompiled into C by
@@ -493,7 +493,7 @@ void gauges_put_picture(uint16_t tiles, uint16_t picture, uint16_t blank)
 }
 
 /* Draws picture B in player A's quarter, in its colour (blank with A bit 7 set) */
-void gauge_draw_picture(uint16_t quarter_and_picture)
+void CONSOLE_ORIGINAL(gauge_draw_picture)(uint16_t quarter_and_picture)
 {
 	uint8_t colour = 0, part_colour = 0, quarter_byte = 0;
 	uint16_t cursor = 0, tile = 0;

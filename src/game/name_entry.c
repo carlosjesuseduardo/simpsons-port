@@ -3,7 +3,7 @@
  *    Description: the name entry for a high score
  *    Version:     0.1.0
  *    Created:     06-11-2026
- *    Modified:    11-11-2026
+ *    Modified:    13-11-2026
  *    Author:      Sebastian Toyos
  *
  *    The Simpsons (arcade, Konami 1991): the game's 053248 program decompiled into C by
@@ -562,7 +562,7 @@ uint16_t name_entry_print_tall_letter(uint16_t sprite, uint16_t letter_and_colou
 
 /* The name entry: draws one of the pictures of tiles (a box or a player's face) in a player's column, or
    blanks it. */
-void name_entry_draw_picture(uint16_t column_and_picture)
+void CONSOLE_ORIGINAL(name_entry_draw_picture)(uint16_t column_and_picture)
 {
 	uint8_t colour = 0, colour_2 = 0, column = 0;
 	uint16_t picture = 0, tile = 0;

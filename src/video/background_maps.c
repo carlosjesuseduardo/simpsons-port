@@ -3,7 +3,7 @@
  *    Description: the tile layers' maps: the edges drawn as they scroll, whole layers, the floor map, tile pictures, the tile banks
  *    Version:     0.1.0
  *    Created:     06-11-2026
- *    Modified:    11-11-2026
+ *    Modified:    13-11-2026
  *    Author:      Sebastian Toyos
  *
  *    The Simpsons (arcade, Konami 1991): the game's 053248 program decompiled into C by
@@ -195,7 +195,7 @@ void draw_layer_b_row(void)
 
 /* Draws a number of columns of a tile layer (0 A, 1 B) from its scroll x on, 8 pixels apart (38 for the
    whole screen), then puts its x offset back to 0 and the bank as it was. */
-void draw_layer_columns(uint16_t layer_and_columns, uint16_t *p_layer_map, uint16_t *p_tile_place)
+void CONSOLE_ORIGINAL(draw_layer_columns)(uint16_t layer_and_columns, uint16_t *p_layer_map, uint16_t *p_tile_place)
 {
 	uint8_t layer = 0;
 	uint16_t layer_and_block_column = 0, layer_map = 0, map_cell = 0, tile_place = 0;
@@ -235,7 +235,7 @@ void draw_layer_columns(uint16_t layer_and_columns, uint16_t *p_layer_map, uint1
 
 /* Draws a number of columns of a tile layer from its scroll x on and fills the floor map's same columns
    from its map, then puts its x offset back to 0. */
-uint16_t draw_layer_columns_with_floor_map(uint16_t layer_and_columns)
+uint16_t CONSOLE_ORIGINAL(draw_layer_columns_with_floor_map)(uint16_t layer_and_columns)
 {
 	uint8_t layer = 0;
 	uint16_t layer_and_block_column = 0, layer_map = 0, map_cell = 0, tile_place = 0, u = 0;

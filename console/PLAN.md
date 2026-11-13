@@ -1,0 +1,390 @@
+# The console build: what it adds, and in what order
+
+The port builds two games from the same decompiled program, as tmnt-port, outrunners-port and segasonic-port do:
+
+- **The Simpsons Arcade**: the decompiled game as it is, the same frame by frame as the reference. It comes first
+  (ports/PLAN.md).
+- **The Simpsons**: the console version, the arcade game made for playing at home. The game's functions
+  console/replaced.txt lists get the console's own versions (console/*.c); their definitions in src/ are written as
+  `CONSOLE_ORIGINAL(name)`, so the arcade build runs the same program (konami_cpu/decompile.py has to read
+  console/replaced.txt first: ports/PLAN.md, A1).
+
+What the decompilation already knows is said with each item; what is left to work out, too. tmnt-port's console/ is
+the model (console.c, menu.c, draw.c, presentation.c, wide.c, modes.c, lan.c): read it, never run or change it from
+here.
+
+## The guidelines (proposed 13-11-2026, from TMNT's: Sebas confirms, changes or drops each)
+
+### What every console version has (tmnt-port's, and the players' reports on it)
+
+1. **The names and the menu.** The executables "The Simpsons Arcade" and "The Simpsons" (TMNT Arcade and TMNT). The
+   menu: ARCADE (the arcade game at home), the modes of our own under a heading of their own (TMNT's SPLINTER WAY,
+   OutRunners' & KNUCKLES), OPTIONS, EXIT. The heading for now: MR. PLOW MODE (Sebas, 13-11-2026: "le ponemos de
+   titulo mr plow mode, y dps lo cambiamos").
+2. **No coins: PRESS START.** A player joins with START: the console puts the slot's coin and its attack in, as the
+   cabinet's players do (the factory settings have no start buttons: a coin and the attack bring a player in). Where
+   a player's box shows INSERT COIN (`game_texts` of bank 12, printed by `print_game_text`), PRESS START. Check: a
+   control script with START alone reaches stage 1 for one, two and four players.
+3. **Who plays whom** (confirmed, Sebas, 13-11-2026: "en la version consola, quiero que se pueda cambiar los
+   personajes"). In this set each slot is a character of its own (1 Marge, 2 Homer, 3 Bart, 4 Lisa): one player
+   alone is always Marge. As TMNT's (its guideline 5), the console puts the player's controls on the slot of the one
+   chosen, and with more players each chooses one of those left; the program stays as it is. (MAME's two-player sets
+   let the players choose, but theirs are other program ROMs, not this set's.) The character chosen again after a
+   continue, as TMNT's turtle change (07-11-2026). One character a player, none twice (Sebas, 13-11-2026: "los
+   personajes, 1 sin repetir"); with the Konami code, a character may be chosen twice (9). Check: one controller choosing
+   Bart: slot 3 plays, the others stay out; after a continue, Lisa: slot 4 plays from where the game goes on.
+4. **The pause**: START of a player in the game pauses (another's brings him in), CONTINUE, RESTART, QUIT; by each
+   player's controls as the menus read them, by touch and by back on the devices; it waits for the frame as the game
+   does (never a sleep of its own: TMNT's pause stood still with VSYNC). Check: the console's headless with `--actions`
+   through the pause, and VSYNC on in the window.
+5. **OPTIONS** as tmnt-port's: CONTROLS (each player's keys, buttons and triggers), VIDEO (WINDOW, FULL SCREEN, PIXELS
+   sharp, smooth, bilinear or CRT, INTEGER SCALE, WIDE, VSYNC, PRESS START's blink, FPS), VOLUME, and the cabinet's
+   settings by the test mode's names: DIFFICULTY, LIVES, DEMO SOUND, SCREEN (flipped); not the coinage. The game keeps
+   them in the EEPROM's copy (59F1, taken into `difficulty_setting` 4814, `lives_per_credit` 485A... by
+   `apply_settings`): the console writes them there before the game starts. In simpsons.ini; the enums only grow at
+   the end. OPTIONS shows the game's version, as TMNT's (Sebas, 13-11-2026: "obvio tmb el @cheviman, la version en
+   options"): `PROJECT_VERSION` and the testing builds' suffix (`SIMPSONS_VERSION_SUFFIX`, -TEST and the CI run's
+   number). Check: each setting as the test mode's COIN/GAME OPTIONS page shows it, and in the game (the lives in a
+   player's box).
+6. **The Konami presentation** (confirmed, Sebas, 13-11-2026: "el logo de intro hagamos con el de las tortugas,
+   buscamos un konami y que le pasen todos caminando"), as tmnt-port's console/presentation.c: before the title at
+   power-on, a Konami logo of the game's own, scaled up and dark on black, until the family walks across it and lights
+   it up. What is left to find: the logo among the game's graphics (TMNT's was a game text of the fixed layer, the
+   ribbon and KONAMI 16 pixels high, that no screen showed; here bank 12's `game_texts` and the fixed layer's
+   characters first, then the sprites), drawn from the player's assets. The family: Marge, Homer, Bart and Lisa as the
+   game's own objects on their slots, each with its own walk, drawn and stepped on by the game's sprite engine, as
+   TMNT's turtles (Maggie too if the game has her walking or carried). The logo: a large Konami one if the game has it,
+   else the best one found (Sebas: "si hay un konami grande, usamos ese, sino bueno, busquemos"). Its sound: one of
+   Bart's voices (Sebas: "el sonido usemos uno de bart"), which one to choose by ear among the K053260's samples the
+   game plays when Bart speaks (the sound commands his objects send).
+   Check: the console's headless frames through it, START skipping it.
+7. **The menu's screen** (confirmed, Sebas, 13-11-2026: "para el menu, usemos la tele, que tiene de titulos para
+   presentarlo"): the TV the game's title and attract show (the family on the couch), with the menu presented on its
+   screen; the title's logo and copyright line, and "@cheviman" under them (the port's signature, as
+   outrunners-port's and TMNT's). What is left to find: the scene and its layers and sprites (the attract's frames,
+   its map scene number), and how the menu's lines fit the TV's screen in each WIDE. Its music to choose among the
+   songs by name (`attract`, `ending`...: tools/sound_music.py's SONGS).
+8. **WIDE** (confirmed, Sebas, 13-11-2026): 16:10 (the Steam Deck), 16:9 and 20:9 beside the arcade's 4:3. The K052109's maps are 512 pixels wide
+   and the sprites can be drawn past 320; what the game keeps up to date beyond its 320 columns (the layers' columns
+   as the scroll goes, the objects and the spawns it leaves off screen, the players' limits against the screen's
+   edges) is what is left to work out, as tmnt-port's console/wide.c did. Also in the pause, the menus, the continue
+   and every scene over the game, and the players' boxes in the middle (the fixed layer's band). The console's
+   biggest job. Check: the headless's frames in each WIDE at each stage's start, middle and boss (the 25 scenarios'
+   frames), and the scenes between them.
+9. **The Konami code in the menu** (confirmed, Sebas, 13-11-2026: "tmb konami code") (up, up, down, down, left,
+   right, left, right, B, A: JUMP and ATTACK): a stage select (a step starts as the scenarios start it: `step_phase`
+   and its two bytes 0, `game_step` 4803 the step, from stage 1 under way), HEALTH INFINITE, unlimited lives and
+   continues; and the characters chosen with repeats (Sebas: "y ahi dejamos repetir"): two or more players the same
+   character, each slot playing the chosen one's moves with its looks, as TMNT's SAME TURTLE (its console/same_turtle.c:
+   the chosen one's tables and palettes on every slot). What a character is to the program is what is left to work out
+   (each character's object kind, its animation set, its records: `player_variable_records`, E819, four of 27 bytes,
+   and its palettes).
+10. **Lives and continues in our own modes**: fixed (TMNT's: 5 lives, 3 continues); unlimited with the code. The
+    decompilation knows the lives (49D1 + 8 x the player), the continue's countdown (4A1C, BCD) and the continue's
+    phase (`game_continue_phase`, `continue_screen`).
+11. **MULTIPLAYER over the LAN, for the four** (arcade-lan as a submodule in lan/, lockstep: one board with four
+    players, as TMNT): each device its players, the host's frames' inputs for all, the state's hash per frame to tell
+    a device that went apart. Check: two headless `--real-time` through a stage; a client gone; the host gone; the
+    library's own tests.
+
+### What this game could add (to weigh)
+
+12. **The high scores kept.** The table is in the work RAM alone (the EEPROM holds its test pattern and the
+    settings), lost at power-off on the cabinet: the console keeps it with its settings and puts it back after the boot
+    sets the table (`insert_high_score`, 079743, and what the boot writes). Check: a high score, the game quit and
+    started again: it is in the table; The Simpsons Arcade as the cabinet.
+13. **BOSS RUSH**: the bosses one after another (src/bosses/: the wrestler, the Krusty balloon, stage 3's two, the
+    football player, the bear, the Dreamland boss, Channel 6's, stage 8's and Mr. Burns' robot), each from its fight's
+    place: how a stage starts at its boss (the scroll, the spawns before it) is what is left to work out, as TMNT's
+    crossing did.
+14. **BONUS GAMES**: the two bonus stages (step 3, blow up the balloon, src/bonus/balloon.c; step 12, wake up,
+    src/bonus/wake_up.c) as a mode of their own from the menu, for one to four players, with their results screen.
+15. **STEREO**: the board wires only the YM2151's left output, so the music's FM channels the program pans right
+    alone (command EF 02) are not heard on the cabinet, nor in MAME; the MIDI files already pan as the program asks.
+    An option, SOUND: MONO (the board's, the default) or STEREO (the YM2151's two outputs as the program pans them), to
+    be listened to first. Check: MONO's sound hashes the same as The Simpsons Arcade's; a song with right-panned
+    channels has them in STEREO's WAV.
+16. **FRANK GRIMES LIFE** (confirmed, Sebas, 13-11-2026: "el modo ronin seria 'frank grimes life'"), TMNT's RONIN:
+    one player against what four would have. The game scales by the players in
+    play (`rank_by_players` 041786 and the bosses' `..._by_players` tables): which counts to give four players' with
+    one is what is left to work out.
+17. **Save states** from the pause (TMNT's guideline 15, still to do there too): the whole board's state the
+    scenarios already compare, with the program's globals (`leftover_y`, the bank) and the runtime's.
+18. **Bart's shirt in orange** (confirmed, Sebas, 13-11-2026: "vamos a cambiarle el color de la remera a bart por la
+    naranja"): in The Simpsons, Bart's shirt in the show's orange; The Simpsons Arcade as the board has it. A palette
+    swap, as TMNT's ORIGINAL TURTLES' bandanas: the colours of Bart's shirt in the palettes his sprites use (the sets the
+    game loads for slot 3: the palette sets E9CB/EAEB, bank 2D's palettes; the sprites' from 32 on), changed where the
+    console sees them loaded, nothing else of the palette. What is left to work out: which palette and which of its
+    colours are the shirt, in every scene (the stages, the bonus stages, the stories, the ending, the attract's
+    profile). Whether OPTIONS gets a line to have the arcade's colour back: to ask. Check: the headless's frames with
+    Bart in each stage and scene: his shirt orange, every other colour of the frame the arcade's.
+19. **The region**, to look at: this set is the World 4 Players one, and the other sets differ in their program ROMs
+    (17c, 13c, 15c); an option only if this program chooses its texts by a byte, as TMNT's `version` did.
+
+## The order (proposed)
+
+The build first (console/replaced.txt, `CONSOLE_ORIGINAL`, `simpsons_console`, `simpsons_console_headless`), then 1,
+2, 3, 4, 5, 7 (the console playable at home), then 8 (WIDE), 9 and 10, 11 (MULTIPLAYER), and the additions Sebas
+keeps from 12 to 19. Every change the console makes is checked with the console's headless (`--actions`,
+`--video-dump`), and The Simpsons Arcade stays 25/25 after each.
+
+## What was done
+
+- **13-11-2026**: this plan (Sebas: "un checklist de todo lo que hay que migrar basico, plataformas, y lo que le
+  vamos a agregar").
+- **13-11-2026, the skeleton** (an agent; its frames seen by me): console/console.h, console_internal.h, console.c,
+  menu.c, draw.c from tmnt-port's generic parts; console/replaced.txt with `attract` and `game_mode_frame` (the
+  decompiler's CONSOLE_ORIGINAL for Konami: of the whole C only those two definitions and their declarations change);
+  "The Simpsons.exe". Points 1 (the menu ARCADE, MR. PLOW MODE with COMING SOON, OPTIONS, EXIT, written with the
+  game's own letters over the attract, darkened), 4 (the pause: CONTINUE, RESTART, QUIT GAME; START of a player in the
+  game pauses, another's brings him in) and 5 (OPTIONS: CONTROLS with the prompts' pictures, VIDEO, VOLUME, the
+  cabinet's settings: DIFFICULTY to VERY DIFFICULT and LIVES to 3 leave the EEPROM's 6C-6F 03 02 01 00, sum 1A1B,
+  59F4-59F7 the same, difficulty_setting 3, lives_per_credit 3, and the game starts Marge with 3 lives; the version
+  V0.1.0) work; point 2's START joins (the slot's coin and attack), its PRESS START text still to do.
+- **13-11-2026, points 2, 3, 6 and 7** (an agent; the frames under build/console_work/, seen by it):
+  - **2, PRESS START**: the players' boxes are gauge_draw_player's pictures: 3 INSERT COIN (tiles C7-CF over D7-DF),
+    5 PRESS START (E9-EF EA EB over F9-FF FA FB), which the cabinet shows where a slot's credit waits for its player.
+    console/gauges.c (`gauge_draw_picture` in console/replaced.txt) draws the game's own PRESS START in place of INSERT
+    COIN, in the box's colour.
+  - **3, who plays whom** (console/characters.c): this EEPROM gives each slot credits of its own (separate_coin_slots),
+    so a slot's credit brings its character in on the portraits. ARCADE starts the game with no credit in (the attract's
+    own start, a credit lent to slot 1 for that frame and taken back) and the game's portraits are the choice: the one
+    who picked ARCADE is in, the others come in with START; LEFT and RIGHT among the characters no other player picked,
+    attack or START picks: the slot's coin, the portrait comes alive with its voice; once everyone in has picked (and 80
+    frames for the last portrait), each one's attack brings him in. In a game, the START of a player whose character
+    does not play opens "1P < BART >" over the game (his own first, the free ones with LEFT and RIGHT, attack brings him
+    in with a coin and the attack, jump closes it): after a continue, or a new player. RESTART picks again at once.
+  - **6, the presentation** (console/presentation.c): the game's biggest Konami logo, the one the attract's last screen
+    shows on its TV (layer A's map of scene 0, area 3, palette set 12's load 1), drawn by the game on black, hidden
+    right of the family until they pass; Homer, Marge with Maggie in her arms (the maggie set, kind 11, as story 1
+    walks her in), Bart and Lisa walk across it as story 1's family walks (their animations, the sprite engine);
+    then one of Bart's voices, and the fade. START or attack skips it. Bart's voices (commands 3F NN, Bart's kind is 2:
+    each family's base + 2), as WAVs in build/console_work/bart_voices/ for Sebas to choose by ear: 3F02 sample 18
+    0.68 s (flung back, squashed), 3F06 sample 22 1.37 s (stunned, blow 04), 3F0A sample 26 0.67 s (story 1's
+    MAGGIE!), 3F0E sample 30 1.61 s (eating), 3F12 sample 34 0.90 s (standing still too long), 3F16 sample 38 0.78 s (a
+    story's line), 3F1A sample 2 0.40 s (his portrait at a game's start), 3F22 sample 6 0.29 s (attack shout), 3F26
+    sample 10 0.38 s (hurt), 3F2A sample 14 1.40 s (stunned, blow 03; stage 2's end). **Sebas chose 3F12** (13-11-2026:
+    "3f12"); the first try had 3F1A.
+  - **7, the menu's screen** (console/tv.c, menu.c): the TV of the attract's last screen and the score ranking (layer
+    B's map of scene 2, area 0, palette set 1's load 2), its screen black as the stage cards have it, the title's logo
+    on it (the title's object, kind 0E, at 0.57 of its size by the K053247's zoom, set 7's sprite colours), the menu's
+    lines under it, then the title's Konami copyright line "(C) 1991 KONAMI" and "@cheviman"; the other pages over the
+    TV without the logo. The menus' song is the attract's (song 80, `attract`), asked for again when it ends; others
+    that would fit: 8B `ending` (the family together), 96 `area_clear` (the family walks on), 91 `game_start`.
+- **13-11-2026, 8, WIDE** (an agent; its frames seen by it, contact sheets under build/wide_work/): OPTIONS > VIDEO >
+  WIDE OFF, 16:10, 16:9, 20:9 (the enum OFF, 16:9, 20:9, 16:10 as tmnt-port's; simpsons.ini's `wide=` by name): 32, 48
+  or 88 columns more at each side, the window 358, 398 or 496 wide (the frames' middle). The Simpsons Arcade has none.
+  - The video (runtime/src/video.c, the port's part of it: `simpsons_video_set_wide`, `_set_layer_window`,
+    `_set_fixed`, `_wide_frame`): the layers' rings and the sprites (the K053247's x has 10 bits) drawn past the board's
+    320, nothing of it unless the console sets it. A side may be up to 32 less than none, the other the more.
+  - The cabinet showed 288 of its 320 columns: the fixed layer covers the first and last 16 with black tiles (3F, its
+    ring's columns 12-13 and 50-51), and its ring's other columns hold tile 00 (a pattern of circles). With WIDE the
+    fixed layer is drawn on the board's 16-303 alone; layers A and B on all of it.
+  - A stage's play (console/wide.c): the layers' maps (the scene's and area's: map_scene, map_area; strips of 256
+    pixels, rows of 16 bytes, blocks of 32 pixels and 18 bytes) read as find_layer_column and draw_map_column read
+    them. The game draws a map's column 352 pixels past the screen's left edge as its scroll goes (camera_scroll_layers'
+    0160) and a whole layer 352 from it (draw_layer_columns, now in console/replaced.txt with
+    draw_layer_columns_with_floor_map: what each layer's ring holds from then); at each frame's end the console draws
+    the columns the wider screen shows that the ring does not hold, with the floor map's cells for the camera's layer
+    (the players and the enemies walk the sides as the board). Its account of the ring: the game's new column (and the
+    one 512 pixels before it gone, also when the game draws it a frame late), a row the game draws as its 12 blocks,
+    the board's black edges as columns the game may leave as they were, a map no wider than the ring (stage 6's sky,
+    512) drawn in it whole, and where the game draws no rows the columns drawn at the y of the rows it holds (stage
+    6's sky scrolls up and down round its ring). Never past a map's ends nor past where the stage's record stops the
+    camera (stage 1's map goes on in a wall of blue bricks past its boss; stages 2, 5 and 7's go on past their stops
+    too): the rest at the other side, the picture panning there 4 pixels a frame; at a stop the picture ends where the
+    cabinet's black edge was. The players' boxes (the whole fixed layer) in the middle of the picture. The continue's
+    countdown and GAME OVER over the play keep its sides.
+  - The objects (console/replaced.txt, the same C with their limits moved by the sides): spawn_stage_objects (a spawn
+    due as far past the wider screen's right side as past the board's, put in at its place; those coming from the left
+    past its left side), enemy_remove_off_screen, remove_off_screen, stop_beyond_screen_edge, enemy_on_screen,
+    player_check_motion, player_check_screen_edges (the players walk to the same distance from the picture's edges).
+  - The other screens are pictures of the board's width, their sides their edges' colour where an edge is all of one
+    (the menus' TV and the stage cards' TV: orange, lilac), else black: the portraits, the stories, the bonus stages,
+    the name entry, the ending, and stage 3's climb (its map black past the 288; the game draws its rows there with
+    offsets of their own). The presentation keeps the board's 320 on black. The pause greys the whole wider frame.
+    OPTIONS' version at the window's right edge.
+  - Checked (the console's executable, `--arcade-start` with tests/controls' scripts, `--wide-check`, SDL's dummy
+    drivers): stages 1-8, bonus 1 and 2, continue, one and four players and story_untouched in 20:9, and the stages,
+    bonus stages, continue and one player in 16:9 and 16:10: no side column but the map's, but at stage 7's end (the
+    helicopter's pick-up, some 130 frames in each width: up to 13 columns at the left, which the game writes there
+    itself); the menus, OPTIONS, VIDEO, the portraits' choice, a story, stage 1 and the pause by `--actions`
+    (build/wide_work/menus.txt). The Simpsons Arcade's 25 scenarios identical (2 min 49 s), the static analysis 43056 of
+    43056, `rom_in_executables` 0 in the three games of build/bin-shell; tools/decompile.py with the new
+    console/replaced.txt gives src/ as written (game.h and five files: CONSOLE_ORIGINAL).
+  - Left, to see in the window: whether the spawns past the wider sides and the widened limits play well (the blind
+    scripts are no players: in 20:9 stage 4's stalls at the pool tables, the scroll held by a player stuck behind
+    one, while 16:9's and 16:10's reach the boss); stage 7's end's left side; the stories in WIDE (black bars today:
+    story 1 scrolls a map that could be wide); the devices' VIDEO without WIDE (SIMPSONS_SCREEN_WIDE: 16:9 fixed).
+- **13-11-2026, point 15, STEREO** (an agent): `simpsons_sound_stereo` (simpsons/sound_board.h; game.h's
+  `game_set_stereo`), off by default: the mix takes the YM2151's second output on the right side at the board's 0.5
+  (simpsons.cpp routes only the first, to both sides at 0.5), so every FM channel is on each side the program pans it to
+  at the board's level; the K053260 and the left side as the board has them. MONO's WAV the same byte for byte as
+  before (the attract, 7201 frames), the 25 scenarios identical. In attract (80), stage_1 (81) and continue (A1) the
+  channels panned right alone are at −39.1, −37.2 and −38.6 dB, sounding in 55, 97 and 52 % of the 50 ms windows;
+  STEREO's right side within 0.2 dB of MONO's level, no higher peak; most right-alone notes are twins of left-alone
+  parts a few ticks off (echoes and doubles), continue has some 700 of its own; after_stage_7 (83), which pans nothing,
+  the same byte for byte. WAVs in build/stereo_work/. The OPTIONS line is in (the Konami code's agent, below): OPTIONS
+  > SOUND MONO | STEREO after VOLUME (console_settings.stereo, simpsons.ini's `sound=mono|stereo`, game_set_stereo at
+  the start and at each apply_settings; `--stereo` sets it for a scripted run). Checked: OPTIONS' frame with SOUND in
+  WIDE OFF and 16:9; a Konami game's stage 1 with and without `--stereo` gives the same state, video and sound hashes
+  (5501 frames: the sound's are the chips', not the mix).
+- **13-11-2026, points 9 and 10, the Konami code, the lives and continues, the devices' menu** (an agent; its frames
+  seen by it, contact sheets and runs under build/konami_work/; Sebas: "No te olvides del Konami code", "En el menu"):
+  - **The code** (menu.c): on the menu, up, up, down, down, left, right, left, right, B (the jump), A (the attack), from
+    any player's controls or the keyboard (the last ten presses, one a frame), as tmnt-port's: the coin's sound
+    (4002) and the KONAMI CODE page over the TV, as OPTIONS': STAGE (the eight stages and the two bonus games by their
+    title cards' names: 1 DOWNTOWN SPRINGFIELD, BONUS 1 BALLOON, 2 KRUSTYLAND, 3 DISCOUNT CEMETERY, 4 MOE'S TAVERN,
+    5 SPRINGFIELD BUTTE, 6 DREAMLAND, BONUS 2 WAKE UP, 7 CHANNEL 6, 8 NUCLEAR POWER PLANT), LIVES INFINITE | NORMAL
+    (INFINITE at first), HEALTH INFINITE | NORMAL (NORMAL), REPEAT CHARACTERS ON | OFF (ON), START (or any START), BACK
+    (to the menu's line the code was entered on). The menu has no line of it (the code's ups and downs take the line
+    there and back, its A picks nothing); not kept in simpsons.ini (tmnt-port's).
+  - **A game begun at a stage** (console_start_game, konami.c; the Konami page's START, and MR. PLOW MODE's modes
+    next): the character choice on the portraits as ARCADE's, the story before stage 1 skipped by a playing slot's
+    attack, and once every playing slot has come into stage 1's play (step_phase 4, each one's entry status) step_phase
+    and its two bytes 0 and game_step the stage's, as the scenarios start it (the program at a step's end, A75E).
+    Meanwhile (some 700 to 1200 of the board's frames) the stage's name on black and no sound (console_volume: the
+    port plays it at 0; the game and the sound program go on as they do), the port running those frames as fast as
+    it can (console_hurried: no waiting for the frame's time, none drawn but one in 16, game_set_draw); then the
+    stage's own title card. RESTART: the same stage again.
+    LIVES INFINITE keeps each playing slot's lives at 5, HEALTH INFINITE each player's vitality at 28 before every
+    frame (a knocked out one, vitality 0, goes on as the game takes him).
+  - **Lives and continues** (guideline 10, console.c): console_start_game(player, step, lives, continues) and
+    console_set_mode_lives: the lives a credit gives (lives_per_credit) and the continues after each player's first
+    credit, his credits counted (console_credit_allowed, console_credit_put: they go with him when he changes
+    character), his START opening nothing once they are over; the countdown then runs out (GAME OVER), and when every
+    player's has the game is over: the attract mode, the menu. ARCADE: the cabinet's (OPTIONS' LIVES, as many continues
+    as STARTs; tmnt-port's ARCADE has no code's lives either). The Konami game: MODE_LIVES 5, MODE_CONTINUES 3, as many
+    as one likes with LIVES INFINITE. A mode of MR. PLOW MODE only chooses its numbers and its first step, and adds its
+    own rules each frame in game_mode_frame.
+  - **Characters chosen more than once** (same_character.c, REPEAT CHARACTERS): a character is, to the program, its
+    player object's kind, 00-03: the sprite engine's set of animations (animation_sets E591: the four share their
+    animations' numbers, each draws its own moves in its own colours, the four palettes always loaded), and in
+    src/players/ the attacks' reach (player_attack_boxes by state and kind), the voices (the command plus the kind),
+    the palette's flash (22 plus the kind), the team-ups, what is carried and how high, the balloons and heights over
+    the head. The kind is the player too (where he comes in: the kind times 32; whose blows a team-up's are:
+    shadow_player's bits 4-5, the kind times 16; a story's random player), and the slot is his lives, score, box, its
+    colour and his "1UP MARGE" mark. So the second player of a character plays on a slot nobody has (the character's
+    own when free), console_slot_character: its object's kind the character's while player_run_all and
+    players_update_second_sprites run (not at the frame he comes in: his place is his slot's) and while draw_object
+    draws it (the second bonus game's players, kind 0A plus the slot, and the bonus games' results' portraits too),
+    the slot's again after; a team-up's player bits written from a character back to the slot meant; two of the same
+    character never team up (team_moves_by_characters' entries of a character with itself are the bytes around the
+    table); his box shows the character's picture (gauge pictures 6-9, gauges.c). On the portraits the character's box
+    takes all its players' frames and tags, and the portrait of a slot another character plays on does not come
+    alive. Without the code, one each as before. console/replaced.txt: player_run_all, players_update_second_sprites,
+    draw_object (tools/decompile.py with it: only their definitions and game.h's declarations change).
+  - **The devices' menu** (menu.c, as tmnt-port's): SIMPSONS_SYSTEM_EXIT (the Switch, Android), no EXIT;
+    SIMPSONS_HANDHELD (the Switch, the Anbernic, Android), no CONTROLS, and VIDEO with PIXELS, INTEGER SCALE and FPS
+    alone (no WINDOW, FULL SCREEN, WIDE, VSYNC: the screen is the window, WIDE the device's or the screen's shape's).
+    The macros reach simpsons_console_program on the three already (switch.cmake, anbernic.cmake, android.cmake).
+  - **The version** (Sebas: "Te falta el nro de version"): on OPTIONS in its panel, on BACK's line at the right in grey,
+    and under the menu beside the signature, "@cheviman  V0.1.0" (the small letters got the digits, '.', '-', V, T, E,
+    S for a testing build's suffix).
+  - **WIDE AUTO, the default everywhere** (Sebas: "Sí, AUTO por defecto"): WIDE_AUTO at the enum's end
+    (simpsons.ini's `wide=auto`, `--wide auto`), VIDEO's WIDE AUTO, OFF, 16:10, 16:9, 20:9, AUTO showing what it
+    resolved to ("AUTO 16:9"). main.c's follow_screen, for every build now: the screen's shape (a computer's: the
+    desktop's mode of the window's display, or the full screen's size; a device's and a phone's: the renderer's whole
+    output) at each frame shown, wide_for_screen (20:9 from 2:1, 16:9 from 16:9 or a tablet's touch screen, 16:10 from
+    3:2, else OFF) into console_set_screen_wide; console_wide_in_effect is it under AUTO (OFF with --arcade-start), the
+    one chosen otherwise, and wide.c and the window's size (apply_settings) take that one; the window sized again
+    when it changes (the window on another monitor, a Fold opened). Android: AUTO replaces the forced WIDE; the Switch
+    keeps 16:9 (SIMPSONS_SCREEN_WIDE). Checked: `--wide auto` with SDL's dummy video ("Screen 1024x768: WIDE AUTO ->
+    off", VIDEO "AUTO OFF", RIGHT: OFF, 16:10); wide_for_screen as main.c has it, compiled alone: 1920x1080 16:9,
+    2560x1600 16:10, 3440x1440 20:9, 1024x768 OFF, 1280x800 16:10, 2340x1080 20:9, 1280x1024 OFF.
+  - **--arcade-start as the arcade again**: the PRESS START for INSERT COIN (gauges.c) changed the fixed layer's tiles,
+    so the console's `--arcade-start` state differed from the scenarios' where a box showed INSERT COIN (the attract's
+    demo, frames 2574-4618; stage1's 709-735); in the arcade's own scenarios the boxes are the cabinet's now
+    (console_arcade_testing), and WIDE AUTO is OFF there: attract and stage1 the same state and sound hashes as
+    build/scenarios, frame by frame (the video differs only by Bart's orange shirt, on by default in a scripted run).
+  - Checked (build/bin-shell's The Simpsons, SDL's dummy drivers, `--actions` for the menus and `--script` for the
+    players' controls in the game; build/konami_work/): the code on the menu and the page; each of the ten stages from
+    the stage select (four blind players, HEALTH INFINITE) starting with its title card and going on to the next step:
+    stage 1 to bonus 1, bonus 1 to stage 2, stage 2 to stage 3, stage 3 to its cemetery part, stage 4 to stage 5 (with
+    the players walking down and up longer: the blind script stalls at the pool tables), stage 5 to stage 6 and stage 7
+    to stage 8 (with HEALTH NORMAL: players knocked out come in again elsewhere; with their health kept they stay at
+    the cave's mouth and a room's wall), stage 6 to bonus 2, bonus 2 to stage 7, stage 8 to its end and the game round
+    to stage 1 (the ending skipped by the blind attack, as the scenario's); HEALTH INFINITE (an idle Marge, LIVES
+    NORMAL: grabbed and hit to frame 12000, vitality 28 and 5 lives throughout); LIVES INFINITE (an idle Bart: knocked
+    out again and again, 5 lives throughout, still playing); the continues (an idle Lisa, LIVES NORMAL: 4 credits, 5
+    lives each, the fifth START nothing, GAME OVER, the menu); ARCADE's continues as before (6 credits, 2 lives each);
+    two Barts, four Lisas, and Bart, Bart and Marge (each moving and attacking, their boxes' pictures, the portraits;
+    two Barts alone stay at stage 1's start, as a lone Bart does with the blind script: the camera never pushed);
+    RESTART of a Konami game at stage 4; the black and silent start (its sound samples silent to the stage's title).
+    The devices' menu by a build with SIMPSONS_HANDHELD and SIMPSONS_SYSTEM_EXIT (build/msvc-device): the menu, OPTIONS
+    and VIDEO as above. The Simpsons Arcade's 25 scenarios identical (2 min 57 s), the static analysis 43056 of 43056,
+    rom_in_executables 0 in build/bin-shell's three games and build/bin-device's.
+- **13-11-2026, 18, Bart's shirt in orange** (an agent; its frames seen by it and by me, contact sheets under
+  build/bart_shirt_work/sheets/; Sebas: "la remera de bart. Que sea naranja", then "hay que agregar un tono de naranja
+  mas oscuro a las mangas" and "cuando lo agarran, es azul"): the cabinet dresses Bart in light blue (xBGR 7F00),
+  shaded with his shorts' blue (pen 8); the game's own orange for him is the attract mode's opening, Bart skating out
+  of school (115F: 31, 10, 4). The Simpsons draws his shirt in it, and its shade in the orange as much darker as the
+  cabinet's shade is than its light blue (CE4218). The four characters share one palette (the sprites' colour 0: pen 7
+  Bart's shirt, the same light blue as Maggie's onesie and the diamond in the pictures), so there is no palette swap:
+  the palette RAM stays the board's and the video draws Bart's pixels orange (runtime/src/video.c's port-side
+  recolouring, simpsons_video_set_recolour: pens of named sprite cells in given colours, per-cell pixel masks drawn in
+  a shade, and the layers' tiles by map cells and tile codes, through the console's colour functions; nothing unless
+  the console sets it). console/bart_shirt.c walks, from the program's data as draw_object reads them, Bart's sprites:
+  his kind (02), his figure in the bonus games (0C), his sprites of the ending's family (14), and Bart held by the
+  goons that grab a player (80, 81, 97) or far away (A4). It assembles each of their frames to tell pen 8's shirt shade
+  from the shorts (by component and border, voted per cell pixel over 361 frames), and has six rules for five pictures
+  (the attract's profile and couch, story 1's Maggie with the diamond, the ending's hug, the walk to Channel 6). A fade
+  of the light blue is the same fade of the orange. Always on in The Simpsons: console_settings.bart_shirt,
+  simpsons.ini's `bart_shirt=orange|arcade` (no OPTIONS line); SIMPSONS_BART_SHIRT=arcade in the environment for checks.
+  - Checked: the console's frames against the arcade's (--arcade-start) and against its own with the shirt off
+    (--actions): every pixel that differs is the shirt or its shade turned orange, none other (stages 1-7, 60 frames
+    each; the ending; bonus 1 and 2; story 1; the attract; the goons' grabs in stages 2 and 3; player 1 as Bart
+    standing on his skateboard, Sebas's pose). The state and sound hashes of attract and stage 1 are the same with the
+    shirt on and off and equal to the arcade's; The Simpsons Arcade's 25 scenarios identical, the static analysis
+    43056 of 43056, rom_in_executables 0 in the three games of build/bin-shell.
+  - Left as the cabinet has it: the darkest blue (pen 12) at the back's lower corner, which is the shorts' shade too;
+    story 1's collage with Smithers (a few pixels of Bart's sleeve, the picture's background tiles).
+- **13-11-2026, the Konami code's leftovers** (the same agent; Sebas: "no los dejes intermedios"):
+  - **No wait for the stage**: the frames under the black run as fast as the machine can (main.c: console_hurried,
+    no wait for the frame's time, one in 16 drawn and shown, game_set_draw: the runtime draws none of the others, the
+    board's state the same either way). Measured with SDL's dummy video at the board's pace: a lone Marge's start to
+    stage 5 (about 1190 covered frames, the story waiting longest with her) in 31.6 s for 3000 frames instead of
+    50.7: the covered frames in about 1.05 s; four players cover some 700. The state and sound hashes of the 3000
+    frames the same as `--fast`'s and as before the change, the card at frame 2288 as before.
+  - **The join mark names the character** (same_character.c, same_character_marks): "1UP MARGE" is one sprite of two
+    cells per character (7828 Marge, 782C Homer, 782A Bart, 782E Lisa, pens 9, 4, A, 8), the slot's number in rows
+    0-9 and the name in rows 11-15; while a slot plays another character, its mark's name rows are that character's,
+    in the slot's pen, in the sprite data in memory (game_sprites), and the assets' again out of such a game (nothing
+    else reads those cells but the test mode's ROM check). Seen: "1UP BART" in red over a second Bart, "1UP LISA" to
+    "4UP LISA" over four Lisas.
+  - **The high scores** (console/replaced.txt: insert_high_score, name_entry_draw_picture): a slot played by another
+    character goes in the table as it (the ranking's icon), the initials a player's last score goes in with as he
+    joins again (player_join: MRG, HMR, BRT, LSA) the character's, and the name entry's column shows its face.
+    Seen: a second Lisa on Marge's slot in again with 9999: the table's first entry LSA, character 3 (was MRG 0), and
+    the name entry's two Lisa faces.
+  - **The hurt flash** (console/replaced.txt: player_flash_palette): measured, it is no sprite's: the palette effect
+    22 plus the kind (palette_effects 35-38) animates pen 11 of palettes 20-23, the four players' boxes' colours (2C1D
+    Marge's red, 7E48 Homer's blue, 0300 Bart's green, 02DF Lisa's orange) in the fixed layer, and the players'
+    sprites draw with the sprites' colours (theirs 00 here, the sprites' base 0). So it says whose box: with the kind
+    the character's, a second Bart hit on Marge's slot flashed the first Bart's green box (the two seemed to flash
+    together). Now the slot's own box flashes (the kind the slot's while player_flash_palette runs). Seen: the second
+    Bart hit (frames 2380-2700, his vitality from 24 to 10, the first Bart's at 0C): before, palette 22 pen 11
+    0300/4CE0/019F and palette 20 at 2C1D; after, palette 20 4411/7F00 and palette 22 at 0300; the frames before and
+    after differ in the boxes' band alone (17,1 to 232,26), the game the same (the same vitality frame by frame), both
+    shirts orange (flash_boxes.png). No video hook needed: the sprites have no flash of their own.
+  - `--arcade-start` the arcade's again: the boxes' PRESS START (gauges.c) changed the fixed layer where a box showed
+    INSERT COIN; in the arcade's own scenarios they are the cabinet's now (console_arcade_testing), and WIDE AUTO is
+    OFF there: attract and stage1 the same state and sound hashes as build/scenarios.
+- **13-11-2026, 12, 13, 14, 16 and 17: MR. PLOW MODE, the high scores kept, save states** (two agents, stopped by
+  Sebas to save the budget once their code was in; finished and checked by the lead): console/modes.c (BOSS RUSH:
+  each stage crossed to its boss out of sight and as fast as the machine goes, the card "BOSS RUSH, BOSS N OF 9",
+  the stage and the boss's name; BONUS GAMES: the two bonus stages in a row, one to four players, their results,
+  back to MR. PLOW MODE's page; FRANK GRIMES LIFE: one player, the game counting four, console/gauges.c putting out
+  the other three boxes whole: their pictures, tabs, lines and scores, Sebas: "si no hay jugadores, no tendria que
+  verse"); console/scores.c (simpsons.scores: the table into the game after the boot, written when a new score
+  comes in); runtime/src/state.c, game_state.c and console/states.c (the pause's SAVE STATE and LOAD STATE, one
+  state in simpsons.state, `--state FILE --state-save FRAME --state-load` for checks).
+  - Checked: from the menu, BOSS RUSH reached the wrestler, then the Krusty balloon, then stage 3's gangsters (a
+    blind player, 5 lives: then CONTINUE, GAME OVER and MR. PLOW MODE's page again); BONUS GAMES played both bonus
+    stages to their results and went back to the page; FRANK GRIMES LIFE played with the other boxes empty. A state
+    saved at stage 1's frame 3000 and loaded in a new run: the 9601 frames after it identical in state, picture and
+    sound to the run that went on. A kept table with SEB first: in the game's table at the attract (frame 400). The
+    Simpsons Arcade's 25 scenarios identical, the static analysis 43056 of 43056, rom_in_executables 0 in build/bin-
+    shell's three games.
+  - Not checked yet: BOSS RUSH past its third boss (the blind player loses there), the kept table written after a
+    new score's name entry (read back only), save states in a bonus stage, a story and with four players.

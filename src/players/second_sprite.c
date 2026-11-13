@@ -3,7 +3,7 @@
  *    Description: each player's second sprite (balloons, thrown things)
  *    Version:     0.1.0
  *    Created:     06-11-2026
- *    Modified:    11-11-2026
+ *    Modified:    13-11-2026
  *    Author:      Sebastian Toyos
  *
  *    The Simpsons (arcade, Konami 1991): the game's 053248 program decompiled into C by
@@ -12,7 +12,7 @@
 #include "game.h"
 
 /* Runs each player's second sprite; in the last story moves the players in state 2C on */
-uint16_t players_update_second_sprites(void)
+uint16_t CONSOLE_ORIGINAL(players_update_second_sprites)(void)
 {
 	uint16_t held_object = 0, object = 0, player = 0, push_speed = 0;
 	uint8_t heavy_workers = 0, player_state = 0, players_before = 0;

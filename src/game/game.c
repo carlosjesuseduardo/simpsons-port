@@ -3,7 +3,7 @@
  *    Description: the game mode's frame and its first phase
  *    Version:     0.1.0
  *    Created:     06-11-2026
- *    Modified:    11-11-2026
+ *    Modified:    13-11-2026
  *    Author:      Sebastian Toyos
  *
  *    The Simpsons (arcade, Konami 1991): the game's 053248 program decompiled into C by
@@ -13,7 +13,7 @@
 
 /* The game mode's frame: the random number, the gauges shown, the players counted, the game's phase by
    mode_phase, the points of the beaten enemies; in_attract cleared */
-void game_mode_frame(uint16_t u)
+void CONSOLE_ORIGINAL(game_mode_frame)(uint16_t u)
 {
 	uint32_t left_caller = 0;
 

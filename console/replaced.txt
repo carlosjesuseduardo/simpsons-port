@@ -1,0 +1,25 @@
+# The game's functions the console build (The Simpsons) puts its own in place of (console/*.c): tools/decompile.py
+# writes their definitions as CONSOLE_ORIGINAL(name), which is original_name there and the game's own elsewhere.
+attract                  # the console's front end over the attract mode: its presentation, its menus on the TV, the
+                         # game started from ARCADE
+game_mode_frame          # the character choice over the game's portraits; the pause's QUIT GAME and RESTART: the
+                         # game ended at its next frame, back to the menu
+gauge_draw_picture       # no coins at home: PRESS START where a player's box shows INSERT COIN (gauges.c); the box's
+                         # picture of the character its slot plays
+draw_layer_columns       # WIDE (wide.c): a whole layer drawn, what its ring holds from then
+draw_layer_columns_with_floor_map
+spawn_stage_objects      # WIDE: the spawns past the wider screen's sides
+enemy_remove_off_screen  # WIDE: the objects out, stopped and on the screen by the wider screen's sides
+remove_off_screen
+stop_beyond_screen_edge
+enemy_on_screen
+player_check_motion      # WIDE: the players to the wider screen's edges
+player_check_screen_edges
+player_run_all           # the Konami code's REPEAT CHARACTERS (same_character.c): a slot another character plays with
+                         # that character's kind while the players run, its team-ups' player bits back to the slots
+players_update_second_sprites    # and its second sprite (what is over its head, its balloons, what it throws)
+draw_object              # and drawn with that character's sprites (its object's set of animations)
+insert_high_score        # REPEAT CHARACTERS: a slot's score goes in the high score table as the character it plays
+name_entry_draw_picture  # and its face in the name entry
+player_flash_palette     # and the box that flashes when a player is hit is his slot's, not his character's slot's
+count_players_in_game    # FRANK GRIMES LIFE (modes.c): the game counts four players while its one player plays

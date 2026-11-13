@@ -4,7 +4,7 @@
  *                 it, its frames drawn and its sound made
  *    Version:     0.1.0
  *    Created:     06-11-2026
- *    Modified:    06-11-2026
+ *    Modified:    13-11-2026
  *    Author:      Sebastian Toyos
  *
  *    license:BSD-3-Clause
@@ -27,12 +27,21 @@
 extern "C" {
 #endif
 
-/* Loads the assets in 'folder' into the board's memories: NULL, or what failed */
-const char *game_load(const char *folder);
+/* Loads the assets into the board's memories from 'assets', their folder or their pack (simpsons.assets, as
+   game_assets_is_pack tells): NULL, or what failed (a pack of another version of the game is refused) */
+const char *game_load(const char *assets);
+
+/* Loads the same from the player's ROM set at 'source' (a .zip or a folder), through this build's layout: only what
+   the assets give (the first run's, which then writes the pack: game_assets_pack_write). NULL, or what failed */
+const char *game_load_rom_set(const char *source);
 
 /* The board after its reset (the factory EEPROM from the assets), its sound board at power on, the program at its
    reset; the test switch on if 'service'. With 'draw', every frame is drawn (game_frame). NULL, or what failed */
 const char *game_reset(bool service, bool draw);
+
+/* Whether the next frames are drawn (game_reset's 'draw'; the board's state the same either way): a port that runs
+   frames it does not show draws none of them (the console's hurried frames) */
+void game_set_draw(bool draw);
 
 /* What the port does when a frame is done (the VBLANK's events are over): its controls, game_end_frame, its
    output */
@@ -51,6 +60,12 @@ uint32_t game_audio_rate(void);
 /* The last frame's sound hashes (the samples, the sound board's state), as kref --sound-hashes writes them */
 uint64_t game_sound_samples_hash(void);
 uint64_t game_sound_state_hash(void);
+
+/* The sound in stereo (The Simpsons' SOUND: STEREO): the YM2151's two outputs each on its own side, the channels the
+   program pans right alone heard on the right; off, the board's (its left output on both sides), every sample the
+   same as the cabinet's. From the next game_end_frame on; game_reset keeps it, and the hashes are the same either way
+   (simpsons/sound_board.h's simpsons_sound_stereo) */
+void game_set_stereo(bool stereo);
 
 #ifdef __cplusplus
 }
