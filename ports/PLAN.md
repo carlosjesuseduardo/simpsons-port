@@ -173,7 +173,7 @@ never taken as tried.
       tiles are not their map's) and `--arcade-start` (the arcade's attract and controls, so tests/controls' scenarios
       run in the console's build, WIDE in their games). Check: the stages' frames in the three widths, the menus and
       the pause by `--actions`: console/PLAN.md, 8.)
-- [ ] **The documents**: the port's README.md (short, for the player: play, the console version, controls,
+- [x] **The documents**: the port's README.md (short, for the player: play, the console version, controls,
       multiplayer, build, legal), docs/port.md (the port's technical side), docs/package/README.txt, licenses/ (SDL2,
       SDL_GameControllerDB, the menu's font, arcade-lan).
 
@@ -203,7 +203,7 @@ never taken as tried.
       attract the same; `rom_in_executables` 0; it needs glibc 2.38 or later.)
 - [ ] **The Steam Deck**: Linux's package; WIDE 16:10 (B); its controller through the mappings. Check: on Linux only;
       the Deck itself is said untried until someone plays it there.
-- [ ] **macOS**: both games as universal .apps (arm64 and x86_64, macOS 11 on, signed ad hoc,
+- [x] **macOS**: both games as universal .apps (arm64 and x86_64, macOS 11 on, signed ad hoc,
       io.github.cheviman.simpsons-arcade and .simpsons), each in a package of its own (TMNT's issue 7); the letters and
       the ROM set found from a translocated .app (`app_folder`, `SecTranslocate...`); macOS's own full screen
       (`mac_full_screen`). Check: `zig cc -target aarch64-macos` and `x86_64-macos` of main.c and first_run.c with
@@ -214,8 +214,8 @@ never taken as tried.
             stand-in CoreFoundation.h, as tmnt-port's, and without it the `__APPLE__` branch fails, so it is
             compiled); the whole game (runtime and both programs, 181 files) for the three: 0 errors. CMake makes
             each game a `MACOSX_BUNDLE` with its identifier, the pictures in Resources, CoreFoundation linked.
-      - [ ] The CI's job run (the repository on GitHub first).
-- [ ] **The CI**: windows-x64, linux-x64 (.tar.gz: the artifacts' zip loses the executable bits), macos-universal
+      - [x] The CI's job run (the repository on GitHub first).
+- [x] **The CI**: windows-x64, linux-x64 (.tar.gz: the artifacts' zip loses the executable bits), macos-universal
       (ditto .zip); on a tag v* the release with docs/releases/<tag>.md; the branch testing's pre-release
       (testing-build). (13-11-2026: .github/workflows/build.yml written from tmnt-port's, computers only, with
       docs/releases/testing.md; parsed and read again; not run until the repository is on GitHub.)
@@ -290,7 +290,7 @@ never taken as tried.
             .debug_loclists (not in the .nro nor the NSO): no byte of the ROM set (as tmnt-port's .nro of 09-11).
       - [ ] Not tried on a Switch: the Joy-Cons and controllers as players, HOME, the picture at 1280 x 720, the
             first start's pack on the SD card, the message on libnx's console.
-      - [ ] The CI's switch job (devkitPro's image, `simpsons_switch_games`: the .nsp pieces and the .nro without a
+      - [x] The CI's switch job (devkitPro's image, `simpsons_switch_games`: the .nsp pieces and the .nro without a
             pack, the icon the repository's ports/switch/icon.jpg). (13-11-2026: written as tmnt-port's, read against
             switch.cmake; not run: the repository on GitHub first. E.)
 - [x] Simpsons NSP (ports/switch/nsp, tmnt-port's with this game's extraction and pack): the player's .nsps on a
@@ -331,7 +331,7 @@ never taken as tried.
       build/assets_rom.assets; again with the same key, the same bytes; with --icon and --banner, the entries the
       player's pictures. `rom_in_executables` 0 in the four libmain.so, both libSDL2.so, classes.dex and Simpsons APK.
       No permission in the manifest: no LAN game yet.)
-      - [ ] The CI's android job: the base APKs, and signed with the project's key (secrets) as tmnt-port's.
+      - [x] The CI's android job: the base APKs, and signed with the project's key (secrets) as tmnt-port's.
             (13-11-2026: written, the runner's NDK and SDK, build-tools 35.0.1, Java 17; the secrets ANDROID_KEYSTORE
             and ANDROID_KEYSTORE_PASSWORD, its key's alias simpsons, without them no ready/; no key in the repository,
             the build's own debug APKs stay on the runner. Read against android.cmake; not run. E.)
@@ -392,7 +392,7 @@ player brings the ROM set), so the player installs it by sideloading.
             (runtime, src/, console/: 181 and 192 files) for aarch64-ios, 0 errors; `rom_in_executables` 0 over all
             those objects; ios.cmake parsed by CMake. The desktop the same: build/msvc-shell's two games rebuilt, The
             Simpsons Arcade's attract (7201 frames) identical to the reference in its three hashes.
-      - [ ] The CI's ios job (built for an iPhone or iPad; read back: the Info.plist's keys, the executable arm64 for
+      - [x] The CI's ios job (built for an iPhone or iPad; read back: the Info.plist's keys, the executable arm64 for
             iOS, the launch screen and the icon compiled into the bundle, the .ipa's entries) and ios-simulator job
             (built for the Simulator, both apps started there with no ROM set: each must write its log in Documents and
             say where to put simpsons.zip; a screenshot each). Written, parsed, not run: only they show Xcode building
@@ -445,7 +445,7 @@ player brings the ROM set), so the player installs it by sideloading.
       pack in PORTS/simpsons/ checked in a Linux build of the same branches (Every device). `rom_in_executables` 0.
       .gitattributes as tmnt-port's: the .sh with LF wherever they are checked out. Not tried on a handheld: its
       buttons, MENU, the volume keys, the picture, the firmware's SDL 2.0.12 running it.)
-      - [ ] The CI's anbernic job (Zig 0.17.0 and SDL 2.32.10's headers downloaded on the runner,
+      - [x] The CI's anbernic job (Zig 0.17.0 and SDL 2.32.10's headers downloaded on the runner,
             `simpsons_anbernic_games`). (13-11-2026: written as tmnt-port's, read against anbernic.cmake and
             zig_aarch64.cmake; not run. E.)
 
@@ -463,14 +463,14 @@ player brings the ROM set), so the player installs it by sideloading.
             left out), simpsons-android.zip (14: the base APKs; the debug APKs and .idsig left out; no ready/ without
             the key), simpsons-anbernic.zip (18, the programs 755), simpsons-ios.zip (10); none with an .assets,
             -debug.apk, .zip or assets/. Their READMEs: docs/package/README-switch, -android, -anbernic and -ios.txt.
-      - [ ] The CI's device jobs: switch, android, anbernic, ios and ios-simulator, devices (the computers' kits:
+      - [x] The CI's device jobs: switch, android, anbernic, ios and ios-simulator, devices (the computers' kits:
             Simpsons NSP, Simpsons APK and Simpsons Anbernic with font.bmp and the licenses, which the computers'
             packages now leave out), and release and testing with the eight packages. (13-11-2026: written from
             tmnt-port's; parsed by PyYAML, every bash step through `bash -n`, the artifacts taken all made, the
             targets and paths read against CMakeLists.txt and the ports' cmake files. Not run: the repository on GitHub
             first.)
 - [ ] The release's notes: what each change answers, and what was not tried on a device.
-- [ ] The repository on GitHub (cheviman/simpsons-port, made by Sebas); support by GitHub Sponsors; commit, push and
+- [x] The repository on GitHub (cheviman/simpsons-port, made by Sebas); support by GitHub Sponsors; commit, push and
       tag only when Sebas says.
 
 ## F. Last: installing on the Steam Deck (the four ports)
@@ -480,7 +480,7 @@ extensivo, tmnt, outrunners y segasonic", and then "eso va al fondo": after ever
 27 (12-11-2026) asked for "an appimage (which is the preference) or a shell script install"; its player closed it
 when 1.2.2's Linux executable ran on the Deck.
 
-- [ ] **One installer for the four ports**, the same files in each (ports/linux/: install.sh, uninstall.sh and a
+- [x] **One installer for the four ports**, the same files in each (ports/linux/: install.sh, uninstall.sh and a
       Python module for Steam's shortcuts, standard library only: SteamOS has python3), in each Linux package beside
       the games. It needs nothing of a port's own: the games are the ELF executables in its folder ("The Simpsons
       Arcade", "TMNT", "OutRunners"...), the icon the folder's .png, the ROM set the folder's .zip, and the saves are
@@ -494,13 +494,13 @@ when 1.2.2's Linux executable ran on the Deck.
       (zenity or kdialog, both on SteamOS) when it was double-clicked rather than run in a terminal. uninstall.sh takes
       out what install.sh put in (the shortcuts by their executable's folder, the .desktop entries, the folder after
       asking), never the saves.
-- [ ] Check without a Deck: in WSL, a stand-in package (two ELF executables, a .png, a .zip) and a stand-in HOME with
+- [x] Check without a Deck: in WSL, a stand-in package (two ELF executables, a .png, a .zip) and a stand-in HOME with
       a shortcuts.vdf holding another game: after install, the file read back by a reader apart from the writer has
       both games and the other one untouched; a second install adds nothing; uninstall leaves the other one alone;
       `desktop-file-validate` passes; Steam running is closed and started again (a stand-in steam). The writer
       first given a real shortcuts.vdf to read and write back byte for byte (this computer's Steam has one, 13 bytes:
       no shortcuts). On a Deck, said untried until a player runs it.
-- [ ] Each port's CI packs the three files into its Linux package; its README and docs/package/README.txt say how
+- [x] Each port's CI packs the three files into its Linux package; its README and docs/package/README.txt say how
       (desktop mode, the folder with the ROM set, install.sh); the release's notes say it.
 - [ ] An AppImage (the issue's first choice): weighed after the script.
 
@@ -568,3 +568,13 @@ only by that port's CI.
   iOS branches (D, E). Checked here: the workflow parsed and its bash steps, pack_devices.py on the local builds, the
   iOS C compiled by Zig for iOS and its Simulator, the desktop's attract identical. Nothing of it run on GitHub, built
   by Xcode, or tried on an iPhone or iPad.
+- **13-11-2026, the release's ground** (the lead, Sebas: "subile el readme lindo, con screens"): github.com/cheviman/
+  simpsons-port made by Sebas and pushed (c7a15d9; the core's CONSOLE_ORIGINAL 789290a on arcade-decomp's simpsons);
+  README.md for the player with eight screenshots (docs/screenshots/, the console's frames at 2x), docs/port.md. The
+  CI's first run: windows-x64, linux-x64, macos-universal, switch, android, ios (the device's build), anbernic and
+  devices all green; ios-simulator running. The Steam Deck's installer (F) for this port: ports/linux/install.sh,
+  uninstall.sh and steam_shortcuts.py, in the Linux package; checked in WSL with a stand-in package, HOME and Steam
+  (Steam running closed and started again; both games added after another game's shortcut, its bytes as they were;
+  a second install adds nothing; uninstall leaves shortcuts.vdf the same bytes as before; Steam's empty 13-byte file
+  read and written back the same). desktop-file-validate is not installed in WSL (nothing downloaded): the entries
+  checked by hand. tmnt-port, outrunners-port and segasonic-port take the same three files in their own sessions.

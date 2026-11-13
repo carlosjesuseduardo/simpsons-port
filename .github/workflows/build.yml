@@ -118,6 +118,11 @@ jobs:
           cp ports/sdl2/controllerdb/LICENSE dist/simpsons/licenses/SDL_GameControllerDB.txt
           cp ports/sdl2/font/License.txt dist/simpsons/licenses/Kenney-Mini.txt
           cp ports/sdl2/prompts/License.txt dist/simpsons/licenses/Kenney-Input-Prompts.txt
+          if [ "$RUNNER_OS" = Linux ]; then
+            # (the Steam Deck's installer: ~/Games, the applications menu and Steam's non-Steam games; ports/linux)
+            cp ports/linux/install.sh ports/linux/uninstall.sh ports/linux/steam_shortcuts.py dist/simpsons/
+            chmod +x dist/simpsons/install.sh dist/simpsons/uninstall.sh
+          fi
           if [ "$RUNNER_OS" = macOS ]; then
             for app in dist/simpsons/*.app; do
               codesign --force --deep --sign - "$app"

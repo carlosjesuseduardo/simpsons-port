@@ -83,6 +83,7 @@
 #define SHORTS_SHADE_PEN    12          /* the shorts' shade, */
 #define OUTLINE_PEN         3           /* the outline */
 #define SHADE_RUN           3           /* (a run of the shorts' blob at the shirt that is the back's edge) */
+#define SLEEVE_MOST         8           /* (a bit of pen 8 alone at the shirt's height: the far arm's sleeve) */
 #define PEN(n)              ((uint16_t)(1u << (n)))
 #define LAYER_A             1u
 #define LAYER_B             2u
@@ -270,13 +271,23 @@ static void assemble(canvas *frame, const sprite *sprites, int count)
 static void classify(canvas *frame)
 {
 	static const int steps[4] = { 1, -1, CANVAS, -CANVAS };
-	int label = 0;
+	int label = 0, shirt_top = CANVAS, shirt_bottom = -1;
+
+	/* (the rows the shirt's own pen covers: a small bit of pen 8 alone within them is the far arm's sleeve, Sebas:
+	   "la mano que queda detras, se le ve el celeste de la remera"; the shoes, also pen 8, are below them) */
+	for (int y = frame->top; y <= frame->bottom; y++)
+		for (int x = frame->left; x <= frame->right; x++)
+			if (frame->pen[y * CANVAS + x] == SHIRT_PEN)
+			{
+				shirt_top = y < shirt_top ? y : shirt_top;
+				shirt_bottom = y > shirt_bottom ? y : shirt_bottom;
+			}
 
 	for (int y = frame->top; y <= frame->bottom; y++)
 		for (int x = frame->left; x <= frame->right; x++)
 		{
 			const int first = y * CANVAS + x;
-			int border[16] = { 0 }, size = 0, depth = 0, edge = 0;
+			int border[16] = { 0 }, size = 0, depth = 0, edge = 0, lowest = y, highest = y;
 
 			if (frame->pen[first] != SHADE_PEN || frame->label[first])
 				continue;
@@ -287,6 +298,8 @@ static void classify(canvas *frame)
 				const int at = frame->stack[--depth];
 
 				frame->stack[CANVAS * CANVAS - 1 - size++] = at;    /* (the component's pixels, from the far end) */
+				lowest = at / CANVAS > lowest ? at / CANVAS : lowest;
+				highest = at / CANVAS < highest ? at / CANVAS : highest;
 				for (int step = 0; step < 4; step++)
 				{
 					const int next = at + steps[step];
@@ -305,7 +318,8 @@ static void classify(canvas *frame)
 			}
 			for (int pen = 1; pen < 16; pen++)
 				edge += pen == OUTLINE_PEN ? 0 : border[pen];
-			const bool shade = border[SHIRT_PEN] > 0 && border[SHORTS_SHADE_PEN] == 0 && 2 * border[SHIRT_PEN] >= edge;
+			const bool shade = (border[SHIRT_PEN] > 0 && border[SHORTS_SHADE_PEN] == 0 && 2 * border[SHIRT_PEN] >= edge)
+				|| (size <= SLEEVE_MOST && border[SHORTS_SHADE_PEN] == 0 && highest >= shirt_top && lowest <= shirt_bottom);
 
 			for (int index = 0; index < size; index++)
 			{

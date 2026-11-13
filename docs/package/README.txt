@@ -34,6 +34,10 @@ macOS: the .apps are not signed with a certificate. The first time, open one wit
 Open (on macOS 15 and later: System Settings, Privacy & Security, Open Anyway).
 Linux: start "./The Simpsons Arcade" or "./The Simpsons" from the folder; the games need SDL2's usual
 libraries of a desktop (X11 or Wayland, ALSA or PulseAudio), which they load themselves.
+Steam Deck (or any Linux): in desktop mode, put simpsons.zip in this folder (or in ~/Downloads) and run
+install.sh: it copies the folder to ~/Games/simpsons, adds both games to the applications menu and to
+Steam as non-Steam games (closing Steam meanwhile and starting it again), so they show in Game Mode.
+uninstall.sh takes them out again; the saves stay.
 
 What the games keep goes in the same folder as simpsons.assets: controls.ini (each player's keys and
 buttons, both games), simpsons.ini (The Simpsons' OPTIONS), simpsons.nv (The Simpsons Arcade's EEPROM:
