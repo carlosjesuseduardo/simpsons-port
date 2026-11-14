@@ -121,12 +121,42 @@ here.
 19. **The region**, to look at: this set is the World 4 Players one, and the other sets differ in their program ROMs
     (17c, 13c, 15c); an option only if this program chooses its texts by a byte, as TMNT's `version` did.
 
+### The players' requests (to do; 14-11-2026, from 1.0's thread on r/decomps)
+
+20. **RUN-AHEAD** (OFF, 1 or 2 frames), in The Simpsons alone: at each frame the whole game's state kept in memory at
+    the main loop's wait (game/state.h: `game_state_possible`, any frame after the boot), the next frames run with this
+    frame's controls, without their sound or their picture but the last one's, which is shown, and the state put back.
+    Off in MULTIPLAYER, where the lockstep decides the frames. What is left to find: the frames the game itself takes
+    between a button and the picture that answers it (the sprite DMA's among them), the state's size and time a frame
+    in memory rather than in a file, and the sound kept from the real frames alone. Check: the headless's `--actions`
+    with RUN-AHEAD 1 and 2: the same pictures 1 and 2 frames earlier than without it; The Simpsons Arcade 25/25.
+21. **The players' boxes at the screen's edges** in WIDE, beside the middle (TMNT's players asked for the middle, so
+    both, in OPTIONS > VIDEO): the fixed layer's band (the four boxes) cut by player, the first two at the left edge
+    and the other two at the right. Check: the headless's frames in each WIDE with one to four players, the boxes whole
+    and nothing of the fixed layer's sides between them.
+22. **A window across two screens**: borderless, as large as the displays side by side (a 32:9 setup), beside FULL
+    SCREEN, which covers one display (`SDL_WINDOW_FULLSCREEN_DESKTOP`). Windows, Linux and macOS. Check: the window's
+    size from SDL's display bounds; on two real screens only by a player, and the release's notes say so.
+23. **WIDE 32:9** (about 796 columns at the board's 224 lines): past the K052109's maps, rings of 512 pixels (20:9 shows
+    496 of them), so the sides would be drawn from the stage's maps outside the chip. After the chip-agnostic port, the
+    goal of every port after the CPU-agnostic C (Sebas, 14-11-2026: "es la idea de llegar a eso").
+24. **What the game does not use**, each looked at before Sebas decides, kept only if it adds something to the game:
+    the 22 sheets of tiles no scene shows (the decomp's assets, `unused_XXXXX`), the 9 sheets of sprite cells nothing
+    shows, the animation set nothing sets up (`kind_AD`), the four FM effects no command reaches
+    (`unused_effect_group`), and `unused_dreamland_spawn_list` (67 spawns no table leads to: a cut layout?). Check: each
+    drawn or played in the headless, its frames seen.
+25. **New stages**: only as a complement to the game's play, never a new skin over it; the player who asked offered
+    their ideas for them (a GitHub issue). Waiting for them.
+26. **Scaling filters** (xBRZ, HQ2X, HQ3X, HQ4X) beside SHARP, SMOOTH, BILINEAR and CRT: once the decomp is at 100 %,
+    with the picture drawn on the GPU (Sebas, 14-11-2026: "cuando lleguemos al 100% del decomp vamos a mejorar el
+    motor gráfico para que sea por hardware y agregar esas cosas en todos los que vengo haciendo"), in every port.
+
 ## The order (proposed)
 
 The build first (console/replaced.txt, `CONSOLE_ORIGINAL`, `simpsons_console`, `simpsons_console_headless`), then 1,
 2, 3, 4, 5, 7 (the console playable at home), then 8 (WIDE), 9 and 10, 11 (MULTIPLAYER), and the additions Sebas
 keeps from 12 to 19. Every change the console makes is checked with the console's headless (`--actions`,
-`--video-dump`), and The Simpsons Arcade stays 25/25 after each.
+`--video-dump`), and The Simpsons Arcade stays 25/25 after each. After 1.0, the players' requests, 20 to 26.
 
 ## What was done
 
@@ -448,3 +478,7 @@ keeps from 12 to 19. Every change the console makes is checked with the console'
   - Only two real devices show: the rooms found across a real network (a firewall's prompt on Windows the first time),
     the Switch's, Android's and iOS's sockets, and the pace with a network's delays. A device's second player is not
     in yet (the library takes them, the menu has no PLAYERS), as in tmnt-port.
+- **14-11-2026**: 20 to 26, the players' requests from 1.0's thread on r/decomps (Sebas: "hagamos así, lo ponemos en
+  to-do"): RUN-AHEAD, the players' boxes at the edges, a window across two screens, WIDE 32:9 after the chip-agnostic
+  port, what the game does not use, new stages from a player's ideas, and the scaling filters with the GPU's picture
+  once the decomp is at 100 %.
