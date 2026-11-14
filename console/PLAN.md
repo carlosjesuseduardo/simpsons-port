@@ -530,3 +530,23 @@ keeps from 12 to 19. Every change the console makes is checked with the console'
     flying saxophone (FC, leaping in from the front), stage 3's ghost on its rope (11, hanging above), a goon from the
     side (3F) at the board's left edge where the picture has no left side, stage 7's ninja (32) at 0180 and kind 0F;
     and a spawn put in as the scroll comes at a camera's stop (the right side 0): a few pixels of it.
+- **14-11-2026, WIDE, stage 3's climb** (Sebas: "El nivel del ascensor empieza mal alineado y tendríamos q hacer una
+  reconstrucción para q sea wide. Xq como se mueve la primer parte de arriba para abajo"; "Fijate lo del ascensor"):
+  stage 3's second step (7, scene 87) begins with layer A scrolling up (cemetery_scroll_up: its y from 0 to 0500,
+  rows drawn and no columns), which WIDE shows as a picture of the board's width (what_shows). The play before it had
+  its sides at the map's left end (16 at the left, the rest at the right: 16 and 80 in 16:9), the picture centred
+  them (48 and 48): the board's part jumped 32 pixels as the climb began and 30 as it ended.
+  - The fix (wide.c, console_wide_frame): a stage's play drawn as a picture keeps the sides the play had, the players'
+    boxes where they were; the play after it pans from there. Checked (the headless, stage3's script): no jump past
+    WIDE_PAN in 16:9, 20:9 and 16:10 through the climb (16:9's step change, 14893-14895, keeps its two frames of the
+    board's); `--wide-check` no side column but the map's; 4:3's state hashes (stage1, stage3) the same; The Simpsons
+    Arcade's 25 scenarios identical; the Switch's two games built (0 warnings).
+  - The climb wide (the reconstruction), measured and not done: layer A's map (768 pixels) has the stage's own picture
+    past the cabinet's columns (blocks of many tiles at 320-767). With the climb shown as a play (sides drawn from the
+    map, tried behind an environment variable), `--wide-check` with the board's columns too: the console's columns are
+    the map's in the whole picture up to layer A's y 03E0 (15027-16933 of the script, about two thirds of the climb);
+    past it they are not, the board's own columns too (13 to 46 of them): there cemetery_scroll_up sets layer A's y
+    offset (layer_a_offset_y) by stage_3_part_2_layer_offsets as its y passes their limits, and the game's rows
+    (find_layer_row: the map's cell at its scroll y plus that offset and the second one) come from rows the console's
+    columns (find_layer_column's: no first y offset) do not draw; no single y offset makes a column match. To do it:
+    the side columns drawn as the game's rows are, with that offset, and checked in each WIDE.

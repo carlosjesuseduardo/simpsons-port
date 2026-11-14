@@ -712,7 +712,13 @@ void console_wide_frame(void)
 	}
 	else
 	{
-		wide_left_now = wide_right_now = shown_now == SHOW_PICTURE ? side : 0;
+		/* (a stage's play drawn as a picture, stage 3's climb, keeps the picture where the play had it: the board's part
+		   in the same place and the players' boxes too, no jump as the climb begins and ends; Sebas: "El nivel del
+		   ascensor empieza mal alineado") */
+		const bool climb = shown_now == SHOW_PICTURE && in_play();
+
+		if (!climb || shown_drawn == SHOW_BOARD)
+			wide_left_now = wide_right_now = shown_now == SHOW_PICTURE ? side : 0;
 		for (int layer = 0; layer < 2; layer++)
 		{
 			const layer_map_area map = rings[layer].known && in_play() ? map_of(layer) : (layer_map_area){ 0 };
@@ -722,7 +728,7 @@ void console_wide_frame(void)
 				                          after it) */
 			simpsons_video_set_layer_window(1 + layer, -0x10000, 0x10000);
 		}
-		simpsons_video_set_fixed(0, fixed_first, fixed_last);
+		simpsons_video_set_fixed(climb ? (wide_right_now - wide_left_now) / 2 : 0, fixed_first, fixed_last);
 	}
 	simpsons_video_set_wide(wide_left_now, wide_right_now);
 	if (debug_on())

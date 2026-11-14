@@ -10,6 +10,8 @@ ROM set, 4 Players World) beside the game, and it makes its assets out of it the
   still in the picture's right side; he waits past its edge, as the arcade keeps him past its own, and walks in when
   the scene ends. The enemies that come in at the start of a stage or an area come in from past the picture's edges,
   and the enemies in the picture's sides no longer stop there as if they had reached the screen's edge.
+- **WIDE, stage 3's climb** (Sebas): the picture no longer jumps sideways as the climb up begins and ends; it stays
+  where the play had it.
 - **WIDE, the bounces at the arcade's edges**: stage 7's leaping ninjas and Krusty's balloon, knocked up in stage 2,
   bounce off the picture's edges, no longer off nothing where the arcade's screen ended; the clown on his ball hops on
   in the picture's sides.
