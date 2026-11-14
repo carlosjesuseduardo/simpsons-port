@@ -605,3 +605,7 @@ only by that port's CI.
   Edition and the board's as it is The Simpsons Arcade Game, in every build and package as above; the identifiers, the
   folder of what the games keep and the Switch's folder simpsons-arcade as they were. Checked as above: the Windows
   games and the makers, the Switch's two .nro, rom_in_executables none.
+- **14-11-2026, 1.0.1** (Sebas: "Comité, pushea y hace versión y cerramos x hoy"): the players' issues 2 and 3, WIDE's
+  stage 1 goon (a player's report), the sides' floor, the bounces and stage 3's climb (console/PLAN.md); version
+  1.0.1 (CMakeLists.txt), docs/releases/v1.0.1.md, testing.md's list emptied; main fast-forwarded to testing, the
+  tag v1.0.1 once the CI is green on that commit. Not tried on a device.
