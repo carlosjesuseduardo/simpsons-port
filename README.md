@@ -126,6 +126,13 @@ The games are free, and stay free. If you want to support the decompilations and
 [GitHub Sponsors](https://github.com/sponsors/cheviman): entirely optional, nothing is locked behind either. If
 anyone asks you to pay for these games, it is not this project.
 
+## Supporting it
+
+The games are free, and stay free. If you want to support the decompilations and the ports, there is
+[Patreon](https://www.patreon.com/c/ChevimanPorts), where supporters also have a say in what comes next, and
+[GitHub Sponsors](https://github.com/sponsors/cheviman): entirely optional, nothing is locked behind either. If
+anyone asks you to pay for these games, it is not this project.
+
 ## Legal
 
 - This project is licensed under the BSD 3-Clause License; see `LICENSE`.
