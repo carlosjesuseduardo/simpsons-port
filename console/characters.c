@@ -347,6 +347,12 @@ void character_change_overlay(console_picture *frame)
 	}
 }
 
+/* A LAN game's power-on (console_lan_power_on): no pick yet */
+void characters_power_on(void)
+{
+	last_pick = 0;
+}
+
 /* A save state's part (states.c): the choice's last pick (the rest of the choice is console's) */
 void characters_state(simpsons_state *state)
 {

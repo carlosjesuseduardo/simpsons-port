@@ -27,6 +27,10 @@
 	<uses-feature android:name="android.hardware.gamepad" android:required="false" />
 	<uses-feature android:name="android.hardware.bluetooth" android:required="false" />
 	<uses-feature android:name="android.hardware.usb.host" android:required="false" />
+	<uses-feature android:name="android.hardware.wifi" android:required="false" />
+
+	<!-- MULTIPLAYER: the rooms' datagrams on the local network (arcade-lan, lan/) -->
+	<uses-permission android:name="android.permission.INTERNET" />
 
 	<application
 		android:label="@SIMPSONS_ANDROID_LABEL@"

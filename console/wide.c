@@ -1283,6 +1283,20 @@ int console_wide_check(char *text, size_t size)
 	return bad;
 }
 
+/* ---- a LAN game's power-on (console_lan_power_on) ---- */
+
+/* What WIDE keeps from frame to frame as at power-on, as the board's reset leaves the tile RAM: the rings' account
+   (the columns drawn there are the board's state, which every device of the game hashes alike) */
+void wide_power_on(void)
+{
+	memset(rings, 0, sizeof(rings));
+	fixed_first = 0;
+	fixed_last = SIMPSONS_VIDEO_WIDTH - 1;
+	last_step = last_mode = 0xFFu;
+	shown_now = shown_drawn = SHOW_BOARD;
+	wide_left_now = wide_right_now = 0;
+}
+
 /* ---- a save state's part (states.c) ---- */
 
 /* What WIDE keeps from frame to frame: its account of the layers' rings (what the game and the console have drawn in

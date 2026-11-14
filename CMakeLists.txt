@@ -261,6 +261,18 @@ if(SIMPSONS_DECOMPILED AND SIMPSONS_CONSOLE_SOURCES)
 	# (its pack's version: the same layout and the same src/table.c as The Simpsons Arcade's, so the same pack)
 	simpsons_add_assets_pack(simpsons_assets_pack_console simpsons_console_program)
 	target_link_libraries(simpsons_console_game PUBLIC simpsons_assets_pack_console)
+	# MULTIPLAYER, the LAN game (console/PLAN.md, 11): arcade-lan, a repository of its own (lan/, or ARCADE_LAN_DIR
+	# where it is), as tmnt-port's; without it the LAN page says NO NETWORK. iOS refuses broadcasts to an app without
+	# Apple's multicast entitlement: the rooms there found by the library's SEEKs and sweeps (ARCADE_LAN_NO_BROADCAST)
+	set(ARCADE_LAN_DIR ${CMAKE_SOURCE_DIR}/lan CACHE PATH "arcade-lan's sources, for The Simpsons' LAN game")
+	if(EXISTS ${ARCADE_LAN_DIR}/CMakeLists.txt)
+		if(CMAKE_SYSTEM_NAME STREQUAL "iOS")
+			set(ARCADE_LAN_NO_BROADCAST ON CACHE BOOL "" FORCE)
+		endif()
+		add_subdirectory(${ARCADE_LAN_DIR} ${CMAKE_BINARY_DIR}/arcade_lan)
+		target_link_libraries(simpsons_console_program PUBLIC arcade_lan)
+		target_compile_definitions(simpsons_console_program PUBLIC SIMPSONS_LAN)
+	endif()
 endif()
 
 # SDL_GameControllerDB (ports/sdl2/controllerdb, zlib License): the community's mappings of game controllers, this
@@ -507,6 +519,11 @@ if(SIMPSONS_WINDOW_PROGRAM AND NOT SIMPSONS_DEVICE)
 				set(SIMPSONS_PACKED_SDL2_LICENSE COMMAND ${CMAKE_COMMAND} -E copy ${SIMPSONS_SDL2_LICENSE_FILE}
 					${SIMPSONS_PACKED}/licenses/SDL2.txt)
 			endif()
+			set(SIMPSONS_PACKED_LAN "")    # (arcade-lan's terms, where The Simpsons has its LAN game)
+			if(TARGET arcade_lan)
+				set(SIMPSONS_PACKED_LAN COMMAND ${CMAKE_COMMAND} -E copy ${ARCADE_LAN_DIR}/LICENSE
+					${SIMPSONS_PACKED}/licenses/arcade-lan.txt)
+			endif()
 			file(MAKE_DIRECTORY ${SIMPSONS_PACKAGE_DIR})
 			add_custom_target(simpsons_package
 				COMMAND ${CMAKE_COMMAND} -E rm -rf ${SIMPSONS_PACKED} ${SIMPSONS_PACKAGE_DIR}/${SIMPSONS_PACKAGE_NAME}.zip
@@ -528,6 +545,7 @@ if(SIMPSONS_WINDOW_PROGRAM AND NOT SIMPSONS_DEVICE)
 					${SIMPSONS_PACKED}/licenses/Kenney-Mini.txt
 				COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_SOURCE_DIR}/ports/sdl2/prompts/License.txt
 					${SIMPSONS_PACKED}/licenses/Kenney-Input-Prompts.txt
+				${SIMPSONS_PACKED_LAN}
 				COMMAND ${CMAKE_COMMAND} -E tar cf ${SIMPSONS_PACKAGE_NAME}.zip --format=zip simpsons
 				WORKING_DIRECTORY ${SIMPSONS_PACKAGE_DIR}
 				DEPENDS simpsons simpsons_console

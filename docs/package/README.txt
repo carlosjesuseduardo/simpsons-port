@@ -66,11 +66,15 @@ they keep: its line goes over their own.
 
 Playing The Simpsons
 --------------------
-The menu: ARCADE (the arcade game at home), MR. PLOW MODE (the console's own modes: coming), OPTIONS
-(each player's CONTROLS; the cabinet's DIFFICULTY, LIVES, DEMO SOUND and SCREEN; VIDEO: the window's
-size, full screen, the pixels, INTEGER SCALE, VSYNC, FPS; the VOLUME; kept in simpsons.ini), EXIT. In a
-game, START brings in another player; Escape, a controller's Back or START of a player in the game
-pauses it (CONTINUE, RESTART, QUIT GAME).
+The menu: ARCADE (the arcade game at home: each player picks a character on the game's portraits),
+MR. PLOW MODE (FREE PLAY with as many continues as you like, BOSS RUSH, BONUS GAMES, FRANK GRIMES
+LIFE), MULTIPLAYER (up to four devices of your local network in one game: one HOSTs a room, the
+others JOIN it, the host's START begins it), OPTIONS (each player's CONTROLS; the cabinet's
+DIFFICULTY, LIVES, DEMO SOUND and SCREEN, and ARCADE's CONTINUES; VIDEO: the window's size, full
+screen, the pixels, INTEGER SCALE, WIDE, VSYNC, FPS; the VOLUME; SOUND MONO or STEREO; kept in
+simpsons.ini), EXIT. In a game, START brings in another player; Escape, a controller's Back or START
+of a player in the game pauses it (CONTINUE, SAVE STATE, LOAD STATE, RESTART, QUIT GAME), but in a
+story or a stage's scene, where START skips it. In a MULTIPLAYER game Escape or Back leaves it.
 
   Move (player 1)            the arrow keys
   Attack, jump               Z or left Ctrl; X or left Alt
@@ -83,7 +87,8 @@ LICENSE.txt is the project's (BSD-3-Clause). licenses/ holds MAME's and ymfm's (
 board's video and sound follow their behavior and tables), SDL2's (zlib: the window, the sound and the
 controls, inside the games), SDL_GameControllerDB's (zlib: the game controllers' mappings, inside the
 games) and Kenney's (CC0: Kenney Mini, the letters of the window that asks for the ROM set; Input
-Prompts Pixel, the keys and buttons on The Simpsons' CONTROLS page).
+Prompts Pixel, the keys and buttons on The Simpsons' CONTROLS page), and arcade-lan's (BSD-3-Clause:
+MULTIPLAYER's rooms and game over the local network, inside The Simpsons).
 
 No data of the game is in this package: no graphics, sound, music or program byte of the ROM set.
 The Simpsons is a trademark of its owner, and the arcade game is Konami's; this project is not

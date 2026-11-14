@@ -118,6 +118,7 @@ jobs:
           cp ports/sdl2/controllerdb/LICENSE dist/simpsons/licenses/SDL_GameControllerDB.txt
           cp ports/sdl2/font/License.txt dist/simpsons/licenses/Kenney-Mini.txt
           cp ports/sdl2/prompts/License.txt dist/simpsons/licenses/Kenney-Input-Prompts.txt
+          cp lan/LICENSE dist/simpsons/licenses/arcade-lan.txt
           if [ "$RUNNER_OS" = Linux ]; then
             # (the Steam Deck's installer: ~/Games, the applications menu and Steam's non-Steam games; ports/linux)
             cp ports/linux/install.sh ports/linux/uninstall.sh ports/linux/steam_shortcuts.py dist/simpsons/
@@ -164,6 +165,7 @@ jobs:
           cp ports/sdl2/controllerdb/LICENSE dist/kit/licenses/SDL_GameControllerDB.txt
           cp ports/sdl2/font/License.txt dist/kit/licenses/Kenney-Mini.txt
           cp ports/sdl2/prompts/License.txt dist/kit/licenses/Kenney-Input-Prompts.txt
+          cp lan/LICENSE dist/kit/licenses/arcade-lan.txt
           ls -la dist/kit dist/kit/licenses
           cd dist && tar czf simpsons-${{ matrix.name }}-kit.tar.gz kit
 

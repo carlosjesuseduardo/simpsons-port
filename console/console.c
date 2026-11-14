@@ -490,7 +490,11 @@ void attract(uint16_t u)
 		tv_forget();
 		console.page = PAGE_MENU;
 		console.choice = 0;
-		if (!restarting && mode != MODE_NONE)
+		if (console_lan_playing())
+			console_lan_game_over();    /* (a LAN game's game over: this device's own settings, the page) */
+		if (console_lan_back_to_page())
+			console.page = PAGE_LAN;    /* (a LAN game over, left, or its host gone: MULTIPLAYER again) */
+		else if (!restarting && mode != MODE_NONE)
 		{
 			console.page = PAGE_MR_PLOW;    /* (a mode's game over: MR. PLOW MODE's page at its line, its lines in */
 			console.choice = mode - MODE_FREE_PLAY;    /* the modes' order) */
@@ -503,6 +507,14 @@ void attract(uint16_t u)
 			console_start_game(console.chooser, console.start_step, lives, continues);
 			console.restarting = true;    /* (the choice picks again at once) */
 		}
+	}
+	if (console.lan_start_due)
+	{
+		/* (a LAN game, the boot over: ARCADE's game for the host, the room's first device, on every device alike) */
+		console.lan_start_due = false;
+		console_start_arcade(0);
+		pressed = 0;
+		memset(player_pressed, 0, sizeof(player_pressed));
 	}
 	if (console.page == PAGE_PRESENTATION)
 	{
@@ -526,6 +538,39 @@ void attract(uint16_t u)
 		return;
 	}
 	tv_frame();
+}
+
+/* ---- MULTIPLAYER: the console as at power-on ---- */
+
+void console_lan_power_on(void)
+{
+	const console_state fresh = { .last_presser = 0 };
+
+	console = fresh;
+	console.mode_continues = CONTINUES_UNLIMITED;    /* (console_attach's) */
+	console.infinite_lives = true;
+	console.repeats = true;
+	console.page = PAGE_MENU;    /* (no presentation: black over the boot, then the game's start) */
+	console.lan_start_due = true;
+	for (int slot = 0; slot < CONSOLE_PLAYERS; slot++)
+	{
+		console_slot_of[slot] = -1;
+		joins[slot].frames = 0;
+		joins[slot].coin = false;
+		joins[slot].attack = false;
+		controls_last[slot] = 0;
+		scene_skips[slot] = 0u;
+	}
+	scene_frame = 0u;
+	arcade_test = false;
+	console_characters_reset();
+	characters_power_on();
+	wide_power_on();
+	modes_game_starting();
+	tv_forget();
+	console_settings_into_eeprom();    /* (the host's, over the factory's the board's reset put) */
+	console_scores_lan(true);
+	console_bart_shirt_apply();    /* (the video's recolouring, which the video's reset let go) */
 }
 
 /* ---- the port ---- */
@@ -570,6 +615,13 @@ void console_overlay(console_picture *frame)
 	character_change_overlay(frame);
 	konami_overlay(frame);
 	modes_overlay(frame);    /* (BOSS RUSH's crossing: its card on black) */
+	if (console_lan_waiting())
+	{
+		char text[40];
+
+		snprintf(text, sizeof(text), "WAITING FOR %s", console_lan_waiting());
+		draw_game_letters_centred(frame, SIMPSONS_VIDEO_HEIGHT / 2, 1, 0xFFD840u, text);
+	}
 }
 
 bool console_quit_requested(void)
@@ -635,7 +687,7 @@ void console_restart_game(void)
 void console_describe(char *text, size_t size)
 {
 	static const char *const pages[] = { "presentation", "menu", "mr. plow mode", "options", "video", "controls",
-		"starting", "choice", "game", "konami" };
+		"starting", "choice", "game", "lan", "lan name", "lan rooms", "lan room", "konami" };
 	char konami[160] = "";
 	const uint8_t *eeprom = simpsons_board.eeprom.data;
 

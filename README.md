@@ -62,6 +62,9 @@ What a tool makes has the game's data in it: it is yours alone, never share it. 
     out of sight.
   - **BONUS GAMES**: the two bonus stages in a row, for one to four players, with their results.
   - **FRANK GRIMES LIFE**: one player, the whole game, against what four players would face.
+- **MULTIPLAYER**: up to four devices on the same local network play one game, a character each: one hosts a room
+  (HOST), the others find it (JOIN), and the host's START begins ARCADE's game on all of them with the host's
+  settings. Built on [arcade-lan](https://github.com/cheviman/arcade-lan); Escape or Back leaves the game.
 - **OPTIONS**: controls for four players, difficulty, lives, ARCADE's continues, demo sound, screen, video (window,
   full screen, sharp, smooth, bilinear or CRT pixels, integer scale, WIDE AUTO, 16:10, 16:9 or 20:9, VSYNC, FPS),
   volume, and SOUND: MONO, as the cabinet wires it, or STEREO, the music's channels where the program pans them. The

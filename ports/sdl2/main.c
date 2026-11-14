@@ -149,6 +149,7 @@
 
 #include <inttypes.h>
 #include <math.h>
+#include <setjmp.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -184,7 +185,7 @@
 #ifdef SIMPSONS_CONSOLE
 #define USAGE "Usage: \"" TITLE "\" [--assets FOLDER|PACK] [--script FILE] [--fast] [--actions FILE]" \
 	" [--video-dump FRAME ... --video-dir DIR] [--wide KIND] [--wide-check] [--arcade-start] [--stereo]" \
-	" [--scores FILE] [--state FILE [--state-save FRAME] [--state-load]]"
+	" [--scores FILE] [--state FILE [--state-save FRAME] [--state-load]] [--lan-name NAME] [--lan-hashes FILE]"
 #else
 #define USAGE "Usage: \"" TITLE "\" [--script FILE [--fast]] [--hashes FILE] [--video-hashes FILE]" \
 	" [--sound-hashes FILE] [--service] [--assets FOLDER|PACK] [--video-dump FRAME ... --video-dir DIR] [--eeprom FILE]"
@@ -208,6 +209,13 @@ static bool unseen;                   /* --fast with SDL's dummy video: no pictu
 static bool service_held;             /* --service: the test switch on all along */
 static bool scripted;                 /* a checked run: no files of the player's read or written */
 static FILE *hashes;
+static uint64_t frames_before;        /* the run's frames before a LAN game's board reset: --actions and --video-dump
+                                         count on across it */
+#ifdef SIMPSONS_CONSOLE
+static FILE *lan_hashes;              /* --lan-hashes: each LAN frame's state hash, two devices' runs compared */
+static bool lan_given;                /* a LAN frame's controls on the board: its hash after the frame */
+static jmp_buf lan_restart_point;     /* (main's: a LAN game's start leaves the program there, the board reset) */
+#endif
 static FILE *video_hashes;
 static FILE *sound_hashes;
 static uint64_t dump_frames[MAX_DUMPS];
@@ -1418,7 +1426,7 @@ static void scripted_actions(uint8_t players[PLAYERS], uint8_t *starts)
 {
 	static const uint8_t controls[ACTIONS] = { SIMPSONS_UP, SIMPSONS_DOWN, SIMPSONS_LEFT, SIMPSONS_RIGHT,
 		SIMPSONS_ATTACK, SIMPSONS_JUMP, 0 };
-	const uint64_t frame = simpsons_board.frame;
+	const uint64_t frame = frames_before + simpsons_board.frame;
 
 	while (next_action < action_count && actions[next_action].frame < frame)
 		next_action++;    /* (a pause's that it did not take) */
@@ -1550,6 +1558,35 @@ static void read_controls(void)
 	console_actions(console_controls_waiting() >= 0 ? 0 : actions_pressed);
 	console_controls(players, starts);
 	actions_pressed = 0;
+}
+
+/* MULTIPLAYER's game: this device's player's controls (player 1's keys and game controller, or --actions' player 1)
+   and START go to the network, and every device's come back onto the board (console_lan_frame), nothing of the port's
+   own keys in the game; till they have come the frame holds: the last picture again (WAITING FOR its device's name),
+   the events read, the pace kept. Escape or Back leaves the game (as tmnt-port's) */
+static void show_frame(void);
+static void wait_for_frame(void);
+
+static void lan_controls(void)
+{
+	uint8_t players[PLAYERS], starts = 0;
+
+	read_players(players, &starts);
+	scripted_actions(players, &starts);
+	actions_pressed = 0;
+	while (!console_lan_frame(players[0], (starts & 1u) != 0))
+	{
+		read_events();
+		actions_pressed = 0;
+		if (pause_requested)
+		{
+			pause_requested = false;
+			console_lan_quit();
+			return;
+		}
+		show_frame();
+		wait_for_frame();
+	}
 }
 
 /* ---- the pause ---- */
@@ -1876,8 +1913,8 @@ static void save_settings(void)
 	char continues[16] = "unlimited";    /* (ARCADE's continues: unlimited or 0-9) */
 	FILE *output;
 
-	if (scripted || !settings_path[0] || (output = fopen(settings_path, "w")) == NULL)
-		return;
+	if (scripted || !settings_path[0] || console_lan_playing() || (output = fopen(settings_path, "w")) == NULL)
+		return;    /* (a LAN game's: the host's settings, not this device's) */
 	if (settings->game_continues != CONSOLE_CONTINUES_UNLIMITED)
 		snprintf(continues, sizeof(continues), "%d", settings->game_continues);
 	fprintf(output, "window_scale=%d\nfull_screen=%d\npixels=%s\ninteger_scale=%d\nwide=%s\nvsync=%d\nvolume=%d\n"
@@ -1887,6 +1924,8 @@ static void save_settings(void)
 		console_difficulty_names[settings->game_difficulty], settings->game_lives, continues, settings->demo_sound,
 		settings->upside_down ? "upside down" : "normal", settings->stereo ? "stereo" : "mono",
 		settings->bart_shirt ? "orange" : "arcade");
+	if (settings->name[0])
+		fprintf(output, "name=%s\n", settings->name);    /* (MULTIPLAYER > NAME) */
 	fclose(output);
 }
 
@@ -1929,6 +1968,9 @@ static void load_settings(void)
 			settings->upside_down = strcmp(line + 7, "upside down") == 0;
 		else if (strncmp(line, "sound=", 6) == 0)
 			settings->stereo = strcmp(line + 6, "stereo") == 0;    /* (OPTIONS > SOUND: stereo or mono) */
+		else if (strncmp(line, "name=", 5) == 0 && line[5] && strlen(line + 5) <= CONSOLE_NAME_LENGTH
+			&& strspn(line + 5, " ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.-") == strlen(line + 5))
+			snprintf(settings->name, sizeof(settings->name), "%s", line + 5);    /* (MULTIPLAYER > NAME) */
 		else if (strncmp(line, "bart_shirt=", 11) == 0)
 			settings->bart_shirt = strcmp(line + 11, "arcade") != 0;    /* (Bart's shirt: orange, or the arcade's) */
 		else if (strncmp(line, "difficulty=", 11) == 0)
@@ -2112,7 +2154,7 @@ static bool frame_drawn = true;    /* (whether the frame done was drawn: game_se
 
 static void on_frame_done(void)
 {
-	const uint64_t number = simpsons_board.frame;
+	const uint64_t number = frames_before + simpsons_board.frame;
 #ifdef SIMPSONS_CONSOLE
 	const bool hurried = console_hurried();    /* (the Konami game's black before its stage: as fast as it can) */
 #else
@@ -2121,9 +2163,21 @@ static void on_frame_done(void)
 
 	read_events();
 #ifdef SIMPSONS_CONSOLE
+	if (lan_given && lan_hashes)
+	{
+		fprintf(lan_hashes, "%" PRIu32 " %016" PRIx64 "\n", console_lan_frame_number(), simpsons_state_hash());
+		fflush(lan_hashes);
+	}
+	lan_given = false;
 	if (script)
 		simpsons_script_apply(script, simpsons_board.frame);
-	read_controls();    /* (a script's controls are the players': the console puts them on their slots) */
+	if (console_lan_playing())
+	{
+		lan_controls();    /* (MULTIPLAYER's game: every device's controls, from the network) */
+		lan_given = console_lan_playing();
+	}
+	else
+		read_controls();    /* (a script's controls are the players': the console puts them on their slots) */
 	console_wide_frame();    /* (WIDE: from the next frame drawn) */
 	console_scores_frame();    /* (the high scores kept: into the game after the boot, a new one written) */
 	if (wide_check)
@@ -2152,7 +2206,12 @@ static void on_frame_done(void)
 		show_frame();
 	dump_frame(number);
 #ifdef SIMPSONS_CONSOLE
-	if (pause_requested && console_can_pause())
+	if (pause_requested && console_lan_playing())
+	{
+		console_lan_quit();    /* (a LAN game has no pause: Escape, Back or the background leave it) */
+		lan_given = false;    /* (the next frame this device's alone: the game ended at it) */
+	}
+	else if (pause_requested && console_can_pause())
 		run_pause();
 	pause_requested = false;
 	scripted_states();    /* (--state-save, --state-load: where the pause's are) */
@@ -2164,6 +2223,11 @@ static void on_frame_done(void)
 	}
 	if (console_quit_requested())
 		quit();
+	if (console_lan_reset_wanted())
+	{
+		frames_before += simpsons_board.frame;    /* (a LAN game's start: the program left, the board reset: main's) */
+		longjmp(lan_restart_point, 1);
+	}
 #else
 	save_eeprom();
 #endif
@@ -2638,6 +2702,7 @@ int main(int argc, char **argv)
 #ifdef SIMPSONS_CONSOLE
 	int wide_option = -1;              /* --wide */
 	bool stereo_option = false;        /* --stereo */
+	const char *lan_name_option = NULL;    /* --lan-name */
 	bool arcade_start = false;         /* --arcade-start */
 	const char *scores_option = NULL;  /* --scores */
 	const char *state_option = NULL;   /* --state */
@@ -2697,6 +2762,13 @@ int main(int argc, char **argv)
 			arcade_start = true;
 		else if (strcmp(argv[index], "--stereo") == 0)
 			stereo_option = true;    /* (SOUND: STEREO, for the checks) */
+		else if (strcmp(argv[index], "--lan-name") == 0 && index + 1 < argc)
+			lan_name_option = argv[++index];    /* (MULTIPLAYER > NAME, for the checks) */
+		else if (strcmp(argv[index], "--lan-hashes") == 0 && index + 1 < argc)
+		{
+			if ((lan_hashes = fopen(argv[++index], "w")) == NULL)
+				fail("The LAN hashes' file cannot be written.");
+		}
 		else if (strcmp(argv[index], "--scores") == 0 && index + 1 < argc)
 			scores_option = argv[++index];
 		else if (strcmp(argv[index], "--state") == 0 && index + 1 < argc)
@@ -2783,6 +2855,8 @@ int main(int argc, char **argv)
 			console_settings.wide = wide_option;
 		if (stereo_option)
 			console_settings.stereo = true;
+		if (lan_name_option)
+			snprintf(console_settings.name, sizeof(console_settings.name), "%s", lan_name_option);
 		game_set_stereo(console_settings.stereo);
 		scale = console_settings.window_scale;
 #ifdef SIMPSONS_HANDHELD
@@ -2949,6 +3023,22 @@ int main(int argc, char **argv)
 	if (script)
 		simpsons_script_apply(script, 0);
 	game_frame_done = on_frame_done;
+#ifdef SIMPSONS_CONSOLE
+	if (setjmp(lan_restart_point))
+	{
+		/* (MULTIPLAYER's game starts: the board reset, the console as at power-on with the host's settings, the
+		   program from its start, on every device alike; as segasonic-port's) */
+		const char *problem = game_reset(false, true);
+
+		if (problem)
+			fail(problem);
+		console_lan_begin();
+		if (audio)
+			SDL_ClearQueuedAudio(audio);
+		next_frame = 0;
+		pause_requested = false;
+	}
+#endif
 	program_run();
 	quit();
 	return 0;

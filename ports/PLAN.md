@@ -578,6 +578,7 @@ only by that port's CI.
   a second install adds nothing; uninstall leaves shortcuts.vdf the same bytes as before; Steam's empty 13-byte file
   read and written back the same). desktop-file-validate is not installed in WSL (nothing downloaded): the entries
   checked by hand. tmnt-port, outrunners-port and segasonic-port take the same three files in their own sessions.
-- **13-11-2026, the plan closed here** (Sebas): the console's LAN in a session of its own; G (the distribution maker)
+- **13-11-2026, the plan closed here** (Sebas): the console's LAN in a session of its own (done the same day:
+  console/PLAN.md, 11); G (the distribution maker)
   and the other ports' Steam Deck installers later, each in its own session. b05bf45 stays local until LAN is in
   (Sebas: "No hagas el ci si falta el lan").

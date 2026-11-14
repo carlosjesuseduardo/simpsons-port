@@ -184,12 +184,39 @@ void console_scores_state_loaded(void)
 	}
 }
 
+/* A LAN game (lan.c): the boot's table on every device of it (the board reset), none of a device's own, nothing of
+   it kept; once it is over and out of a game, the kept table in the game again */
+static bool g_lan, g_lan_over;
+
+void console_scores_lan(bool playing)
+{
+	if (playing)
+		g_lan = true;
+	else if (g_lan)
+	{
+		g_lan = false;
+		g_lan_over = true;
+	}
+}
+
 void console_scores_frame(void)
 {
 	uint8_t table[TABLE_SIZE];
 
-	if (!g_path[0])
+	if (!g_path[0] || g_lan)
 		return;
+	if (g_lan_over)
+	{
+		if (game_mode == GAME_MODE_GAME || program_waiting_at() != SIMPSONS_FRAME_WAIT)
+			return;
+		if (g_restored)
+		{
+			into_game(g_kept);
+			memcpy(g_seen, g_kept, TABLE_SIZE);
+		}
+		g_lan_over = false;
+		return;
+	}
 	if (!g_restored)
 	{
 		if (program_waiting_at() != SIMPSONS_FRAME_WAIT)

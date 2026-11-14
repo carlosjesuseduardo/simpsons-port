@@ -76,5 +76,7 @@
 	</array>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>MULTIPLAYER finds and plays with the other devices of your local network.</string>
 </dict>
 </plist>

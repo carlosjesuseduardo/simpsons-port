@@ -391,6 +391,7 @@ keeps from 12 to 19. Every change the console makes is checked with the console'
 - **13-11-2026, the plan closed here** (Sebas: "Cerremos el plan. Y yo activo otra sesión para el lan"): done 1-10,
   12-18 (19 looked at: the World set has no Japanese music, that is the 2-player sets' 072-g03); 11, MULTIPLAYER over
   the LAN, goes to a session of its own (arcade-lan as tmnt-port's console/lan.c). Not pushed until it is: b05bf45.
+  (11 done the same day, below: the session never started, the lead did it.)
 - **13-11-2026, the scenes without the pause, FREE PLAY and ARCADE's continues** (Sebas: "en las cinematicas que no se
   pause, en mr plow, agreguemos un modo normal de juego, pero sin limite de continues, en arcade, agrega en options el
   limite de continues"; the runs under build/continues_work/):
@@ -411,3 +412,39 @@ keeps from 12 to 19. Every change the console makes is checked with the console'
     console_start_arcade's. Checked: OPTIONS' frames (3 by default, 1 after two LEFTs); ARCADE with 1: Marge's second
     credit, then her START opened nothing, GAME OVER and the menu (frame 12500).
   - The version 1.0.0 (CMakeLists.txt's project), for the release.
+- **13-11-2026, 11, MULTIPLAYER over the LAN** (Sebas: "arranquemos el lan"; "La versión del tmnt es la última
+  implementada, pero el repo de arcade-lan": tmnt-port's console/lan.c the model, arcade-lan at its latest, ad5dfe7, in
+  lan/ as a submodule; the runs under build/lan_work/):
+  - The build: arcade-lan (CMakeLists.txt's ARCADE_LAN_DIR, SIMPSONS_LAN) linked to The Simpsons alone, on every
+    platform; iOS with ARCADE_LAN_NO_BROADCAST (the rooms found by the library's SEEKs and sweeps) and
+    NSLocalNetworkUsageDescription, Android with INTERNET; its license in the packages (licenses/arcade-lan.txt).
+  - console/lan.c (tmnt-port's, the game "SIMP", its beacons at 27780: OutRunners' 27720, TMNT's 27740, SegaSonic's
+    27760): the menu's MULTIPLAYER (between MR. PLOW MODE and OPTIONS; the menu's lines 12 pixels apart from 96, the
+    copyright and the signature where they were) with HOST, JOIN, NAME (simpsons.ini's `name=`), BACK; JOIN's rooms;
+    the room's devices, the host's START (two or more) and LEAVE. The host's START sends its DIFFICULTY, LIVES,
+    CONTINUES, DEMO SOUND, SCREEN and the WIDE in effect (AUTO as its screen has it: WIDE moves the spawns and the
+    players' limits).
+  - The game's start: no tasks here, so the port leaves the program by longjmp at the frame's end (segasonic-port's
+    way), game_reset, console_lan_begin and the program from its start again; the console as at power-on
+    (console_lan_power_on: the console's state, the joins, the scenes' skips, characters.c's last pick, wide.c's
+    rings, the modes', the TV), the host's settings into the EEPROM over the factory's, the boot's high score table
+    on every device (scores.c: none of a device's own, nothing of the game kept, the kept table back once it is over),
+    Bart's shirt again; black over the boot, then ARCADE's game for the host (the room's first device) and the
+    character choice on the portraits, where every other device's player comes in with START and picks, as at home.
+  - Each frame: the device's player 1's controls and START newly pressed (2 bytes, 3 frames' delay; nothing of the
+    port's own keys in the game), every device's back through console_controls, the room's devices in its list's
+    order the console's players 1-4; the frame held till they come (WAITING FOR its name over the picture); the state's
+    hash after each frame to the host. No pause: Escape or Back leaves the game (its character stands, the game goes
+    on for the others), the game over, the host gone or OUT OF STEP: the MULTIPLAYER page again with the device's own
+    settings, never saved over by the host's. --lan-name and --lan-hashes for the checks, --actions and --video-dump
+    counting the run's frames across the reset.
+  - Checked on this computer, two of The Simpsons with SDL's dummy drivers at the board's pace: the host's room found
+    by the guest, START, Marge (host) and Homer (guest) picked, story 1 and stage 1 played with both attacking and
+    walking: 4096 LAN frames with the same state hash on both (the guest's pictures the host's), the guest leaving at
+    its run's frame 5000 and the host playing on alone (Homer standing), each back on MULTIPLAYER and out by EXIT; a
+    second pair, the host leaving at frame 3500: 2597 frames the same, and the guest's MULTIPLAYER page with HOST GONE.
+    arcade-lan's own tests (lan_test, lan_link_test) pass; rom_in_executables none in The Simpsons, The Simpsons Arcade
+    and Simpsons NSP; The Simpsons Arcade's 25 scenarios identical.
+  - Only two real devices show: the rooms found across a real network (a firewall's prompt on Windows the first time),
+    the Switch's, Android's and iOS's sockets, and the pace with a network's delays. A device's second player is not
+    in yet (the library takes them, the menu has no PLAYERS), as in tmnt-port.

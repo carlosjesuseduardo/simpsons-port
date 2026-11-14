@@ -45,11 +45,11 @@
 #define HEADING_COLOUR      0xFFD840u
 #define SIGNATURE_COLOUR    0xD0D0D0u
 #define COPYRIGHT_COLOUR    0xD0D0D0u
-#define MENU_Y              100          /* the menu's lines, on the TV's screen under the title's logo */
-#define ITEM_STEP           14
+#define MENU_Y              96           /* the menu's lines, on the TV's screen under the title's logo */
+#define ITEM_STEP           12
 #define COPYRIGHT           "[ 1991 KONAMI"    /* the title's copyright line, Konami's (game text 2's: '[' its
                                                   copyright sign), under the menu */
-#define COPYRIGHT_Y         (MENU_Y + 4 * ITEM_STEP + 4)
+#define COPYRIGHT_Y         (MENU_Y + MENU_ITEMS * ITEM_STEP + 4)
 #define SIGNATURE           "@cheviman  V" SIMPSONS_VERSION    /* the port's author, under it (as tmnt-port's), and
                                                             its release */
 #define SIGNATURE_Y         (COPYRIGHT_Y + 12)
@@ -68,9 +68,9 @@
 
 /* (a device's lines past their lists, never chosen: SIMPSONS_SYSTEM_EXIT, SIMPSONS_HANDHELD) */
 #ifdef SIMPSONS_SYSTEM_EXIT
-enum { MENU_ARCADE, MENU_MR_PLOW, MENU_OPTIONS, MENU_ITEMS, MENU_EXIT = 100 };
+enum { MENU_ARCADE, MENU_MR_PLOW, MENU_LAN, MENU_OPTIONS, MENU_ITEMS, MENU_EXIT = 100 };
 #else
-enum { MENU_ARCADE, MENU_MR_PLOW, MENU_OPTIONS, MENU_EXIT, MENU_ITEMS };
+enum { MENU_ARCADE, MENU_MR_PLOW, MENU_LAN, MENU_OPTIONS, MENU_EXIT, MENU_ITEMS };
 #endif
 enum { PLOW_FREE_PLAY, PLOW_BOSS_RUSH, PLOW_BONUS_GAMES, PLOW_FRANK_GRIMES, PLOW_BACK, PLOW_ITEMS };    /* (the
 	modes' order: MODE_FREE_PLAY on, console.c's way back to the page) */
@@ -88,9 +88,9 @@ enum { VIDEO_WINDOW, VIDEO_FULL_SCREEN, VIDEO_PIXELS, VIDEO_INTEGER_SCALE, VIDEO
 enum { KONAMI_STAGE, KONAMI_LIVES, KONAMI_HEALTH, KONAMI_REPEATS, KONAMI_START, KONAMI_BACK, KONAMI_ITEMS };
 
 #ifdef SIMPSONS_SYSTEM_EXIT
-static const char *const menu_items[MENU_ITEMS] = { "ARCADE", "MR. PLOW MODE", "OPTIONS" };
+static const char *const menu_items[MENU_ITEMS] = { "ARCADE", "MR. PLOW MODE", "MULTIPLAYER", "OPTIONS" };
 #else
-static const char *const menu_items[MENU_ITEMS] = { "ARCADE", "MR. PLOW MODE", "OPTIONS", "EXIT" };
+static const char *const menu_items[MENU_ITEMS] = { "ARCADE", "MR. PLOW MODE", "MULTIPLAYER", "OPTIONS", "EXIT" };
 #endif
 static const char *const plow_items[PLOW_ITEMS] = { "FREE PLAY", "BOSS RUSH", "BONUS GAMES", "FRANK GRIMES LIFE",
 	"BACK" };
@@ -179,6 +179,9 @@ static void menu_page(uint32_t pressed)
 			break;
 		case MENU_MR_PLOW:
 			open_page(PAGE_MR_PLOW, PLOW_FREE_PLAY);
+			break;
+		case MENU_LAN:
+			open_page(PAGE_LAN, 0);
 			break;
 		case MENU_OPTIONS:
 			open_page(PAGE_OPTIONS, 0);
@@ -337,6 +340,164 @@ static void video_page(uint32_t pressed)
 			return;
 	}
 	settings->changed = true;
+}
+
+/* ---- MULTIPLAYER (lan.c) ---- */
+
+/* MULTIPLAYER: HOST, JOIN, NAME, BACK; what went wrong last under them. NAME: UP and DOWN change the letter, LEFT and
+   RIGHT go to the one beside it, ACCEPT keeps the name, BACK leaves it as it was. JOIN: the rooms found, one picked;
+   the room: its devices, the host's START (two devices or more) and LEAVE. As tmnt-port's */
+enum { LAN_HOST, LAN_JOIN, LAN_NAME, LAN_BACK, LAN_ITEMS };
+static const char *const lan_items[LAN_ITEMS] = { "HOST", "JOIN", "NAME", "BACK" };
+static const char name_letters[] = " ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.-";
+static char name_edit[CONSOLE_NAME_LENGTH + 1];    /* NAME: the name being written */
+static int name_at;
+static int name_then = -1;    /* (HOST or JOIN, asked with no name yet: what NAME goes on to once kept; -1 none) */
+static int lan_blink;
+
+static const char *own_name(void)
+{
+	return console_settings.name[0] ? console_settings.name : CONSOLE_DEFAULT_NAME;
+}
+
+/* HOST: a room of its own; JOIN: the rooms looked for */
+static void host_or_join(int item)
+{
+	if (item == LAN_HOST)
+	{
+		const bool hosting = console_lan_host();
+
+		open_page(hosting ? PAGE_LAN_ROOM : PAGE_LAN, hosting ? 0 : LAN_HOST);
+		return;
+	}
+	console_lan_search();
+	open_page(console_lan_searching() ? PAGE_LAN_ROOMS : PAGE_LAN, console_lan_searching() ? 0 : LAN_JOIN);
+}
+
+/* NAME, its letters the name kept (blank when none yet), 'then' HOST or JOIN once kept (-1: the page) */
+static void open_name(int then)
+{
+	snprintf(name_edit, sizeof(name_edit), "%-*s", CONSOLE_NAME_LENGTH, console_settings.name);
+	name_at = 0;
+	name_then = then;
+	open_page(PAGE_LAN_NAME, 0);
+}
+
+static void lan_page(uint32_t pressed)
+{
+	if (pressed & (ACTION_BIT(ACTION_UP) | ACTION_BIT(ACTION_DOWN) | ACTION_BIT(ACTION_ACCEPT) | ACTION_BIT(ACTION_START)))
+		console_lan_problem_seen();
+	if ((pressed & ACTION_BIT(ACTION_BACK)) || (chosen_now(pressed) && console.choice == LAN_BACK))
+	{
+		console_lan_leave();
+		open_page(PAGE_MENU, MENU_LAN);
+		return;
+	}
+	if (!chosen_now(pressed))
+		return;
+	switch (console.choice)
+	{
+		case LAN_HOST:
+		case LAN_JOIN:
+			if (!console_settings.name[0])
+				open_name(console.choice);    /* (the player's name first, the one the room shows) */
+			else
+				host_or_join(console.choice);
+			break;
+		case LAN_NAME:
+			open_name(-1);
+			break;
+		default:
+			break;
+	}
+}
+
+static int letter_of(char letter)
+{
+	for (int index = 0; name_letters[index]; index++)
+		if (name_letters[index] == letter)
+			return index;
+	return 0;
+}
+
+static void lan_name_page(uint32_t pressed)
+{
+	const int letters = (int)sizeof(name_letters) - 1;
+
+	if (pressed & ACTION_BIT(ACTION_BACK))
+	{
+		open_page(PAGE_LAN, name_then >= 0 ? name_then : LAN_NAME);
+		name_then = -1;
+		return;
+	}
+	if (chosen_now(pressed))
+	{
+		const int then = name_then;
+		int length = CONSOLE_NAME_LENGTH;
+
+		while (length > 0 && name_edit[length - 1] == ' ')
+			length--;
+		if (length > 0 || !console_settings.name[0])
+		{
+			/* (none written: PLAYER, not asked again) */
+			snprintf(console_settings.name, sizeof(console_settings.name), "%.*s",
+				length ? length : (int)strlen(CONSOLE_DEFAULT_NAME), length ? name_edit : CONSOLE_DEFAULT_NAME);
+			console_settings.changed = true;    /* (the port keeps it) */
+			console_lan_name_changed();
+		}
+		name_then = -1;
+		if (then >= 0)
+			host_or_join(then);
+		else
+			open_page(PAGE_LAN, LAN_NAME);
+		return;
+	}
+	if (pressed & (ACTION_BIT(ACTION_UP) | ACTION_BIT(ACTION_DOWN)))
+		name_edit[name_at] = name_letters[step_value(letter_of(name_edit[name_at]),
+			(pressed & ACTION_BIT(ACTION_UP)) ? 1 : -1, 0, letters - 1)];
+	name_at = step_value(name_at, change(pressed), 0, CONSOLE_NAME_LENGTH - 1);
+}
+
+static void lan_rooms_page(uint32_t pressed)
+{
+	const int rooms = console_lan_room_count();
+
+	if (!console_lan_searching())
+	{
+		open_page(PAGE_LAN, LAN_JOIN);
+		return;
+	}
+	if (console.choice > rooms)
+		console.choice = rooms;    /* (a room forgotten: BACK where it was) */
+	if ((pressed & ACTION_BIT(ACTION_BACK)) || (chosen_now(pressed) && console.choice >= rooms))
+	{
+		console_lan_leave();
+		open_page(PAGE_LAN, LAN_JOIN);
+		return;
+	}
+	if (chosen_now(pressed) && console_lan_join(console.choice))
+		open_page(PAGE_LAN_ROOM, 0);
+}
+
+static void lan_room_page(uint32_t pressed)
+{
+	const bool host = console_lan_hosting();
+
+	if (console_lan_reset_wanted())
+		return;    /* (its game started: the board reset at this frame's end) */
+	if (!console_lan_in_room())
+	{
+		open_page(PAGE_LAN, 0);
+		return;
+	}
+	if ((pressed & ACTION_BIT(ACTION_BACK)) || (chosen_now(pressed) && console.choice == (host ? 1 : 0)))
+	{
+		console_lan_leave();
+		open_page(PAGE_LAN, 0);
+		return;
+	}
+	if (chosen_now(pressed) && host && console.choice == 0 && console_lan_can_start())
+		console_lan_start();
 }
 
 /* ---- the Konami code ---- */
@@ -552,10 +713,16 @@ void menu_frame(uint32_t pressed, const uint32_t player_pressed[CONSOLE_PLAYERS]
 
 	(void)player_pressed;    /* (each player's own: the character choice's, characters.c) */
 	console.page_frames++;
+	lan_blink++;
+	if (page >= PAGE_LAN && page <= PAGE_LAN_ROOM)
+		console_lan_update();    /* (the rooms' datagrams, the game's start) */
 	switch (page)
 	{
 		case PAGE_MENU: lines = MENU_ITEMS; break;
 		case PAGE_MR_PLOW: lines = PLOW_ITEMS; break;
+		case PAGE_LAN: lines = LAN_ITEMS; break;
+		case PAGE_LAN_ROOMS: lines = console_lan_room_count() + 1; break;
+		case PAGE_LAN_ROOM: lines = console_lan_hosting() ? 2 : 1; break;
 		case PAGE_OPTIONS: lines = OPTION_ITEMS; break;
 		case PAGE_VIDEO: lines = VIDEO_ITEMS; break;
 		case PAGE_KONAMI: lines = KONAMI_ITEMS; break;
@@ -582,6 +749,18 @@ void menu_frame(uint32_t pressed, const uint32_t player_pressed[CONSOLE_PLAYERS]
 			break;
 		case PAGE_KONAMI:
 			konami_page_frame(pressed);
+			break;
+		case PAGE_LAN:
+			lan_page(pressed);
+			break;
+		case PAGE_LAN_NAME:
+			lan_name_page(pressed);
+			break;
+		case PAGE_LAN_ROOMS:
+			lan_rooms_page(pressed);
+			break;
+		case PAGE_LAN_ROOM:
+			lan_room_page(pressed);
 			break;
 		case PAGE_OPTIONS:
 			options_page(pressed);
@@ -708,6 +887,87 @@ static void video_overlay(void)
 	option_line(video_items, VIDEO_BACK, NULL);
 }
 
+/* MULTIPLAYER's pages (as tmnt-port's) */
+static void lan_overlay(void)
+{
+	const char *problem = console_lan_problem();
+
+	page_box("MULTIPLAYER", LAN_ITEMS + 2);
+	option_line(lan_items, LAN_HOST, NULL);
+	option_line(lan_items, LAN_JOIN, NULL);
+	option_line(lan_items, LAN_NAME, own_name());
+	option_line(lan_items, LAN_BACK, NULL);
+	if (problem)
+		draw_game_letters_centred(target, LINE_Y + (LAN_ITEMS + 1) * LINE_STEP, 1, CHOSEN_COLOUR, problem);
+}
+
+static void lan_name_overlay(void)
+{
+	const int scale = 2, letter = draw_game_letters_width("A", scale);
+	int x = draw_centred_x(target, CONSOLE_NAME_LENGTH * letter);
+	char shown[2] = { 0, 0 };
+
+	page_box(name_then >= 0 ? "YOUR NAME" : "NAME", 4);
+	for (int at = 0; at < CONSOLE_NAME_LENGTH; at++, x += letter)
+	{
+		const uint32_t colour = at == name_at ? CHOSEN_COLOUR : ITEM_COLOUR;
+
+		shown[0] = name_edit[at];
+		if (shown[0] != ' ')
+			draw_game_letters(target, x, LINE_Y + LINE_STEP, scale, colour, shown);
+		draw_fill(target, x + 1, LINE_Y + LINE_STEP + 17, letter - 3, 2, at == name_at ? CHOSEN_COLOUR : 0x8080A0u);
+	}
+	draw_game_letters_centred(target, LINE_Y + 3 * LINE_STEP + 4, 1, ITEM_COLOUR, "UP DOWN: LETTER  ACCEPT: OK");
+}
+
+static void lan_rooms_overlay(void)
+{
+	const int rooms = console_lan_room_count();
+	char text[40];
+
+	page_box("JOIN", LAN_ITEMS + 2);
+	for (int room = 0; room < rooms; room++)
+	{
+		console_lan_room_text(room, text, sizeof(text));
+		draw_game_letters(target, LINE_LEFT, LINE_Y + room * LINE_STEP, 1,
+			room == console.choice ? CHOSEN_COLOUR : ITEM_COLOUR, text);
+	}
+	draw_game_letters(target, LINE_LEFT, LINE_Y + rooms * LINE_STEP, 1,
+		console.choice == rooms ? CHOSEN_COLOUR : ITEM_COLOUR, "BACK");
+	if (rooms == 0 && (lan_blink & 32) == 0)
+		draw_game_letters_centred(target, LINE_Y + 3 * LINE_STEP, 1, ITEM_COLOUR, "LOOKING FOR ROOMS");
+}
+
+static void lan_room_overlay(void)
+{
+	const bool host = console_lan_hosting();
+	const int members = console_lan_member_count();
+	const char *problem = console_lan_problem();
+	char text[40];
+
+	page_box(console_lan_joining() ? "JOINING" : "ROOM", LAN_ITEMS + 4);
+	for (int index = 0; index < members; index++)
+	{
+		console_lan_member_text(index, text, sizeof(text));
+		draw_game_letters(target, LINE_LEFT, LINE_Y + index * LINE_STEP, 1, ITEM_COLOUR, text);
+	}
+	if (host)
+	{
+		draw_game_letters(target, LINE_LEFT, LINE_Y + 5 * LINE_STEP, 1,
+			console.choice == 0 ? CHOSEN_COLOUR : ITEM_COLOUR, console_lan_can_start() ? "START" : "START: 2 OR MORE");
+		draw_game_letters(target, LINE_LEFT, LINE_Y + 6 * LINE_STEP, 1,
+			console.choice == 1 ? CHOSEN_COLOUR : ITEM_COLOUR, "LEAVE");
+	}
+	else
+	{
+		if ((lan_blink & 32) == 0)
+			draw_game_letters_centred(target, LINE_Y + 5 * LINE_STEP, 1, ITEM_COLOUR, "THE HOST STARTS");
+		draw_game_letters(target, LINE_LEFT, LINE_Y + 6 * LINE_STEP, 1, CHOSEN_COLOUR, "LEAVE");
+	}
+	if (problem)
+		draw_game_letters_centred(target, LINE_Y + 7 * LINE_STEP, 1, CHOSEN_COLOUR, problem);
+}
+
 /* KONAMI CODE: its heading, and its lines as OPTIONS' */
 void konami_page_overlay(console_picture *frame)
 {
@@ -805,6 +1065,18 @@ void menu_overlay(console_picture *frame)
 			break;
 		case PAGE_KONAMI:
 			konami_page_overlay(frame);
+			break;
+		case PAGE_LAN:
+			lan_overlay();
+			break;
+		case PAGE_LAN_NAME:
+			lan_name_overlay();
+			break;
+		case PAGE_LAN_ROOMS:
+			lan_rooms_overlay();
+			break;
+		case PAGE_LAN_ROOM:
+			lan_room_overlay();
 			break;
 		default:
 			break;

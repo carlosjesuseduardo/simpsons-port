@@ -41,6 +41,10 @@ enum
 	PAGE_STARTING,         /* ARCADE's coin going in, the game starting */
 	PAGE_CHOICE,           /* the game's portraits: each player chooses his character (characters.c) */
 	PAGE_GAME,             /* the game's own, from the characters chosen to the attract mode */
+	PAGE_LAN,              /* MULTIPLAYER: HOST, JOIN, NAME, BACK (lan.c), */
+	PAGE_LAN_NAME,         /* its NAME, */
+	PAGE_LAN_ROOMS,        /* JOIN's rooms found, */
+	PAGE_LAN_ROOM,         /* and the room's devices */
 	PAGE_KONAMI            /* the Konami code's page, from the menu: its stage, lives, health and characters
 	                          (konami.c) */
 };
@@ -90,6 +94,8 @@ typedef struct
 	int mode;                  /* the game being started or played is MR. PLOW MODE's (MODE_*: modes.c) */
 	bool code_entered;         /* the Konami code was entered on the menu: its page's lives, health and characters
 	                              hold in MR. PLOW MODE's games too */
+	bool lan_start_due;        /* a LAN game's board reset: ARCADE's game started for the host as the attract mode
+	                              comes (console_lan_power_on) */
 } console_state;
 
 /* MR. PLOW MODE's modes (modes.c) */
@@ -118,6 +124,43 @@ bool console_slot_joining(int slot);
 
 /* The game ended where it is (QUIT GAME, RESTART, the character choice left): the attract mode at its next frame */
 void console_end_game(void);
+
+/* ---- MULTIPLAYER (lan.c) ---- */
+
+/* The menus' side of the LAN game: HOST, JOIN (the rooms found, one joined), the room's devices, the host's START,
+   LEAVE; what went wrong last (NULL: nothing); console_lan_update each frame on its pages */
+bool console_lan_host(void);
+void console_lan_search(void);
+void console_lan_leave(void);
+void console_lan_name_changed(void);
+bool console_lan_searching(void);
+bool console_lan_in_room(void);
+bool console_lan_joining(void);
+bool console_lan_hosting(void);
+int console_lan_room_count(void);
+void console_lan_room_text(int index, char *text, size_t size);
+bool console_lan_join(int index);
+int console_lan_member_count(void);
+void console_lan_member_text(int index, char *text, size_t size);
+bool console_lan_can_start(void);
+void console_lan_start(void);
+const char *console_lan_problem(void);
+void console_lan_problem_seen(void);
+void console_lan_update(void);
+/* The LAN game's end for this device (its game over, as the attract mode comes back); whether the MULTIPLAYER page is
+   to open as the attract mode comes back (once); the device the game holds for, by its name (NULL: none) */
+void console_lan_game_over(void);
+bool console_lan_back_to_page(void);
+const char *console_lan_waiting(void);
+
+/* The console as at power-on for a LAN game, after the board's reset (console.c): every file's state the game sees
+   (the console's, the joins, the characters, WIDE's rings, the scenes' skips), the settings into the EEPROM, the high
+   scores of the boot's (console_scores_lan), ARCADE's game started for the host as the attract mode comes */
+void console_lan_power_on(void);
+void characters_power_on(void);
+void wide_power_on(void);
+/* A LAN game's: the boot's table on every device, nothing of it kept; once over, the kept table back in the game */
+void console_scores_lan(bool playing);
 
 /* Whether the game shows a scene a button skips (check_skip's: a story, a title card, a stage's or a bonus game's
    end, the ending): no pause there, a START skips it */

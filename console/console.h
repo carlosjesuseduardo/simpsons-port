@@ -105,6 +105,19 @@ enum
 
 bool console_can_pause(void);
 bool console_start_pauses(int player);
+
+/* MULTIPLAYER, the LAN game (console/lan.c, arcade-lan): the host's START has begun it, and the board is to be reset
+   for it (the port: the program left, game_reset, console_lan_begin, and the program run again from its start, on
+   every device alike); while it is played each frame's controls go through console_lan_frame (this device's player's
+   stick and buttons, and START newly pressed), which puts every device's on the board once they have come (false:
+   not yet, the frame holds and the port shows its last picture again), and there is no pause (Escape or Back leaves
+   the game: console_lan_quit). The LAN frame whose controls are on the board, for checks (--lan-hashes) */
+bool console_lan_reset_wanted(void);
+void console_lan_begin(void);
+bool console_lan_playing(void);
+bool console_lan_frame(uint8_t pressed, bool start);
+void console_lan_quit(void);
+uint32_t console_lan_frame_number(void);
 void console_pause_overlay(console_picture *picture, int choice);
 void console_quit_game(void);
 void console_restart_game(void);
@@ -203,6 +216,8 @@ bool console_controls_defaults(void);
                                           credit, 0 to 9, */
 #define CONSOLE_CONTINUES_UNLIMITED (-1)    /* or as many as STARTs (the cabinet's coins) */
 #define CONSOLE_CONTINUES_DEFAULT 3    /* (the modes' and TMNT's) */
+#define CONSOLE_NAME_LENGTH     10     /* MULTIPLAYER > NAME: the device's name in a room (arcade-lan's LAN_NAME_LENGTH) */
+#define CONSOLE_DEFAULT_NAME    "PLAYER"
 
 typedef struct
 {
@@ -223,6 +238,7 @@ typedef struct
 	bool demo_sound;       /* the sound in the attract mode (68 + 6) */
 	bool upside_down;      /* the screen flipped (68 + 7) */
 	bool bart_shirt;       /* Bart's shirt in the show's orange (bart_shirt.c); false: the cabinet's light blue */
+	char name[CONSOLE_NAME_LENGTH + 1];    /* MULTIPLAYER > NAME (A-Z, 0-9, '.', '-' and spaces; none yet: asked for) */
 	bool changed;
 } console_settings_t;
 
