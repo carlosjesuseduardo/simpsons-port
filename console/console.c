@@ -23,8 +23,9 @@
  *    game's variables, as the boot's apply_settings takes them (symbols.txt: apply_settings 078A1A,
  *    eeprom_load_settings 05E00F, eeprom_write_sum 05EA57).
  *
- *    The lives and continues (guideline 10): ARCADE's game keeps the cabinet's (OPTIONS' LIVES a credit, a START a
- *    continue as long as one likes); a game of the console's own modes sets its own as it starts
+ *    The lives and continues (guideline 10): ARCADE's game keeps the cabinet's lives (OPTIONS' LIVES a credit) and
+ *    OPTIONS' CONTINUES (0 to 9, or a START a continue as long as one likes, UNLIMITED; MR. PLOW MODE's FREE PLAY has
+ *    those always); a game of the console's own modes sets its own as it starts
  *    (console_set_mode_lives: MODE_LIVES a credit and MODE_CONTINUES continues, TMNT's Splinter Way's), each player's
  *    credits counted, and his START opens nothing once his continues are over. The Konami code's game is one
  *    (konami.c), with as many as one likes when its LIVES are INFINITE.
@@ -61,8 +62,8 @@ int console_slot_of[CONSOLE_PLAYERS];    /* (-1 each from console_attach on) */
 
 /* The factory's (assets/eeprom.txt): NORMAL, 2 lives, the attract mode's sound on, the screen the right way up */
 console_settings_t console_settings = { .window_scale = 3, .pixels = PIXELS_SHARP, .volume = 5, .vsync = true,
-	.wide = WIDE_AUTO, .game_difficulty = 1, .game_lives = 2, .demo_sound = true, .upside_down = false,
-	.bart_shirt = true };
+	.wide = WIDE_AUTO, .game_difficulty = 1, .game_lives = 2, .game_continues = CONSOLE_CONTINUES_DEFAULT,
+	.demo_sound = true, .upside_down = false, .bart_shirt = true };
 
 const char *const console_pixel_names[PIXELS_KINDS] = { "sharp", "smooth", "bilinear", "crt" };
 const char *const console_wide_names[WIDE_KINDS] = { "off", "16:9", "20:9", "16:10", "auto" };
@@ -93,6 +94,20 @@ static struct
 } joins[CONSOLE_PLAYERS];
 
 static uint8_t controls_last[CONSOLE_PLAYERS];    /* each player's controls at the last frame */
+
+/* The scenes a button skips (check_skip: the stories, the stages' title cards, the stages' and the bonus games' ends,
+   the bonus games' instructions, the ending): no pause in them (Sebas: "en las cinematicas que no se pause"), and a
+   START of a player in the game skips them as his attack does, SCENE_SKIP_FRAMES frames of it */
+#define STEP_STORY_1        1u         /* game_step: the stories, */
+#define STEP_STORY_2        5u
+#define STEP_STORY_3        10u
+#define STEP_STORY_4        14u
+#define STEP_ENDING         16u        /* and the ending */
+#define PHASE_STEPS         1u         /* mode_phase: the game's steps (game_run_step) */
+#define SCENE_GAP           30u        /* the frames between a scene's parts (check_skip not called) still its */
+#define SCENE_SKIP_FRAMES   3          /* (one let go, two pressed) */
+static uint64_t scene_frame;           /* the board's frame check_skip last ran at, plus one (0: none yet) */
+static uint8_t scene_skips[CONSOLE_PLAYERS];    /* each slot's frames of attack left for a START's skip */
 
 /* ---- the slots ---- */
 
@@ -141,7 +156,11 @@ static void start_pressed(int player)
 	if (game_mode != GAME_MODE_GAME || console.quitting_game || !console_player_may_join(player))
 		return;    /* (FRANK GRIMES LIFE: its one player alone) */
 	if (slot >= 0 && (console_slot_plays(slot) || console_slot_joining(slot)))
+	{
+		if (console_slot_plays(slot) && console_in_scene())
+			scene_skips[slot] = SCENE_SKIP_FRAMES;    /* (a scene: skipped as by his attack, check_skip) */
 		return;
+	}
 	character_change_open(player);
 }
 
@@ -205,6 +224,16 @@ void console_controls(const uint8_t pressed[CONSOLE_PLAYERS], uint8_t starts)
 		slots[slot] |= konami_presses(slot) | modes_presses(slot);    /* (the Konami game: the story before stage 1
 			skipped; BOSS RUSH: a stage crossed to its boss) */
 	for (int slot = 0; slot < CONSOLE_PLAYERS; slot++)
+		if (scene_skips[slot] > 0u)
+		{
+			/* (a START's skip of a scene: the attack let go at its first frame, for its press to be new) */
+			if (scene_skips[slot] == SCENE_SKIP_FRAMES)
+				slots[slot] &= (uint8_t)~(SIMPSONS_ATTACK | SIMPSONS_JUMP);
+			else
+				slots[slot] |= SIMPSONS_ATTACK;
+			scene_skips[slot]--;
+		}
+	for (int slot = 0; slot < CONSOLE_PLAYERS; slot++)
 	{
 		const int frame = joins[slot].frames - 1;
 
@@ -261,6 +290,7 @@ static void slots_game_over(void)
 		joins[slot].frames = 0;
 		console.character_change[slot] = 0;
 		console.credits_put[slot] = 0;
+		scene_skips[slot] = 0u;
 	}
 	console_characters_reset();
 	console_set_mode_lives(LIVES_CABINET, CONTINUES_UNLIMITED);
@@ -304,12 +334,15 @@ void console_start_game(int player, int step, int lives, int continues)
 	modes_game_starting();    /* (MR. PLOW MODE's: modes.c) */
 }
 
-/* ARCADE: the cabinet's game, its lives and continues OPTIONS', from its beginning */
+/* ARCADE: the cabinet's game, its lives and continues OPTIONS' (Sebas: "en arcade, agrega en options el limite de
+   continues"; MR. PLOW MODE's FREE PLAY has as many as one likes), from its beginning */
 void console_start_arcade(int player)
 {
 	console.konami = false;
 	console.mode = MODE_NONE;
-	console_start_game(player, STEP_FIRST_STAGE, LIVES_CABINET, CONTINUES_UNLIMITED);
+	console_start_game(player, STEP_FIRST_STAGE, LIVES_CABINET,
+		console_settings.game_continues == CONSOLE_CONTINUES_UNLIMITED ? CONTINUES_UNLIMITED
+		: console_settings.game_continues);
 }
 
 /* The attract mode's own start of a game, with no player in it yet: it starts the game when a slot has a credit, so
@@ -460,7 +493,7 @@ void attract(uint16_t u)
 		if (!restarting && mode != MODE_NONE)
 		{
 			console.page = PAGE_MR_PLOW;    /* (a mode's game over: MR. PLOW MODE's page at its line, its lines in */
-			console.choice = mode - MODE_BOSS_RUSH;    /* the modes' order) */
+			console.choice = mode - MODE_FREE_PLAY;    /* the modes' order) */
 		}
 		console.page_frames = 0;
 		pressed = 0;
@@ -544,9 +577,29 @@ bool console_quit_requested(void)
 	return console.quit;
 }
 
+/* The game's check_skip (game/skip.c): the frame a scene waits for a button at */
+void check_skip(uint16_t wait, uint16_t *p_presses_addresses, uint32_t *p_skipped)
+{
+	scene_frame = simpsons_board.frame + 1u;
+	original_check_skip(wait, p_presses_addresses, p_skipped);
+}
+
+bool console_in_scene(void)
+{
+	if (game_mode != GAME_MODE_GAME || mode_phase != PHASE_STEPS)
+		return false;
+	if (game_step == STEP_STORY_1 || game_step == STEP_STORY_2 || game_step == STEP_STORY_3
+		|| game_step == STEP_STORY_4 || game_step == STEP_ENDING)
+		return true;    /* (the stories and the ending, all of them: their parts before a button skips them too) */
+	return scene_frame != 0u && simpsons_board.frame < scene_frame + SCENE_GAP;
+}
+
 bool console_can_pause(void)
 {
-	return console.page == PAGE_GAME && game_mode == GAME_MODE_GAME && !console.quitting_game;
+	/* (the character choice too, Sebas: "en el menu de elegir personaje, no va a la pausa": its QUIT GAME back to the
+	   menu; not in a scene, "en las cinematicas que no se pause") */
+	return (console.page == PAGE_GAME || console.page == PAGE_CHOICE) && game_mode == GAME_MODE_GAME
+		&& !console.quitting_game && !(console.page == PAGE_GAME && console_in_scene());
 }
 
 /* Whether a START of 'player' pauses the game: his character plays, or is coming in (a START of one who does not

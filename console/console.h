@@ -199,6 +199,10 @@ bool console_controls_defaults(void);
 #define CONSOLE_DIFFICULTIES    4      /* 8-3 DIFFICULTY: EASY, NORMAL, DIFFICULT, VERY DIFFICULT */
 #define CONSOLE_LIVES_FEWEST    1      /* 8-2 NUMBER OF PLAYERS: the lives a credit gives, 1 to 7 */
 #define CONSOLE_LIVES_MOST      7
+#define CONSOLE_CONTINUES_MOST  9      /* OPTIONS' CONTINUES, the console's: ARCADE's continues after a player's first
+                                          credit, 0 to 9, */
+#define CONSOLE_CONTINUES_UNLIMITED (-1)    /* or as many as STARTs (the cabinet's coins) */
+#define CONSOLE_CONTINUES_DEFAULT 3    /* (the modes' and TMNT's) */
 
 typedef struct
 {
@@ -214,6 +218,8 @@ typedef struct
 	                          board's (its first alone) */
 	int game_difficulty;   /* 0-3, as the EEPROM keeps it (68 + 4) */
 	int game_lives;        /* 1-7: the EEPROM keeps it less one (68 + 5) */
+	int game_continues;    /* ARCADE's continues: 0 to CONSOLE_CONTINUES_MOST, or CONSOLE_CONTINUES_UNLIMITED (the
+	                          console's, not the EEPROM's) */
 	bool demo_sound;       /* the sound in the attract mode (68 + 6) */
 	bool upside_down;      /* the screen flipped (68 + 7) */
 	bool bart_shirt;       /* Bart's shirt in the show's orange (bart_shirt.c); false: the cabinet's light blue */

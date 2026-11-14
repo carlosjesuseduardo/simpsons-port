@@ -16,7 +16,8 @@
  *    arcade game at home for the player who picks it: a coin, then the character choice on the game's portraits
  *    (characters.c); the others come in with START. OPTIONS changes the cabinet's settings by the test mode's names (8-3 DIFFICULTY,
  *    8-2 NUMBER OF PLAYERS as LIVES, 8-4 SOUND IN ATTRACT MODE as DEMO SOUND, 8-5 VIDEO SCREEN FLIP as SCREEN), which
- *    go into the game when OPTIONS closes; VIDEO, VOLUME and SOUND (MONO, the board's, or STEREO) the port's. The
+ *    go into the game when OPTIONS closes; CONTINUES (ARCADE's, 0 to 9 or UNLIMITED), VIDEO, VOLUME and SOUND (MONO,
+ *    the board's, or STEREO) the port's. The
  *    port's version on OPTIONS (in its panel, at BACK's right) and under the menu with "@cheviman". As tmnt-port's
  *    console/menu.c.
  *
@@ -71,16 +72,16 @@ enum { MENU_ARCADE, MENU_MR_PLOW, MENU_OPTIONS, MENU_ITEMS, MENU_EXIT = 100 };
 #else
 enum { MENU_ARCADE, MENU_MR_PLOW, MENU_OPTIONS, MENU_EXIT, MENU_ITEMS };
 #endif
-enum { PLOW_BOSS_RUSH, PLOW_BONUS_GAMES, PLOW_FRANK_GRIMES, PLOW_BACK, PLOW_ITEMS };    /* (the modes' order:
-	MODE_BOSS_RUSH on, console.c's way back to the page) */
+enum { PLOW_FREE_PLAY, PLOW_BOSS_RUSH, PLOW_BONUS_GAMES, PLOW_FRANK_GRIMES, PLOW_BACK, PLOW_ITEMS };    /* (the
+	modes' order: MODE_FREE_PLAY on, console.c's way back to the page) */
 #ifdef SIMPSONS_HANDHELD
-enum { OPTION_DIFFICULTY, OPTION_LIVES, OPTION_DEMO_SOUND, OPTION_SCREEN, OPTION_VIDEO, OPTION_VOLUME, OPTION_SOUND,
-	OPTION_BACK, OPTION_ITEMS, OPTION_CONTROLS = 100 };
+enum { OPTION_DIFFICULTY, OPTION_LIVES, OPTION_CONTINUES, OPTION_DEMO_SOUND, OPTION_SCREEN, OPTION_VIDEO,
+	OPTION_VOLUME, OPTION_SOUND, OPTION_BACK, OPTION_ITEMS, OPTION_CONTROLS = 100 };
 enum { VIDEO_PIXELS, VIDEO_INTEGER_SCALE, VIDEO_FPS, VIDEO_BACK, VIDEO_ITEMS, VIDEO_WINDOW = 100, VIDEO_FULL_SCREEN,
 	VIDEO_WIDE, VIDEO_VSYNC };
 #else
-enum { OPTION_CONTROLS, OPTION_DIFFICULTY, OPTION_LIVES, OPTION_DEMO_SOUND, OPTION_SCREEN, OPTION_VIDEO, OPTION_VOLUME,
-	OPTION_SOUND, OPTION_BACK, OPTION_ITEMS };
+enum { OPTION_CONTROLS, OPTION_DIFFICULTY, OPTION_LIVES, OPTION_CONTINUES, OPTION_DEMO_SOUND, OPTION_SCREEN,
+	OPTION_VIDEO, OPTION_VOLUME, OPTION_SOUND, OPTION_BACK, OPTION_ITEMS };
 enum { VIDEO_WINDOW, VIDEO_FULL_SCREEN, VIDEO_PIXELS, VIDEO_INTEGER_SCALE, VIDEO_WIDE, VIDEO_VSYNC, VIDEO_FPS,
 	VIDEO_BACK, VIDEO_ITEMS };
 #endif
@@ -91,21 +92,23 @@ static const char *const menu_items[MENU_ITEMS] = { "ARCADE", "MR. PLOW MODE", "
 #else
 static const char *const menu_items[MENU_ITEMS] = { "ARCADE", "MR. PLOW MODE", "OPTIONS", "EXIT" };
 #endif
-static const char *const plow_items[PLOW_ITEMS] = { "BOSS RUSH", "BONUS GAMES", "FRANK GRIMES LIFE", "BACK" };
+static const char *const plow_items[PLOW_ITEMS] = { "FREE PLAY", "BOSS RUSH", "BONUS GAMES", "FRANK GRIMES LIFE",
+	"BACK" };
 /* (what the chosen one is, under the lines) */
 static const char *const plow_about[PLOW_ITEMS][2] = {
+	{ "THE ARCADE GAME FROM STAGE 1", "AS MANY CONTINUES AS YOU LIKE" },
 	{ "THE BOSSES ONE AFTER ANOTHER", "FROM THE WRESTLER TO MR. BURNS" },
 	{ "BLOW UP THE BALLOON, THEN WAKE UP", "1 TO 4 PLAYERS" },
 	{ "ONE PLAYER, THE WHOLE GAME,", "AGAINST WHAT FOUR WOULD FACE" },
 	{ "", "" },
 };
 #ifdef SIMPSONS_HANDHELD
-static const char *const option_items[OPTION_ITEMS] = { "DIFFICULTY", "LIVES", "DEMO SOUND", "SCREEN", "VIDEO",
-	"VOLUME", "SOUND", "BACK" };
+static const char *const option_items[OPTION_ITEMS] = { "DIFFICULTY", "LIVES", "CONTINUES", "DEMO SOUND", "SCREEN",
+	"VIDEO", "VOLUME", "SOUND", "BACK" };
 static const char *const video_items[VIDEO_ITEMS] = { "PIXELS", "INTEGER SCALE", "FPS", "BACK" };
 #else
-static const char *const option_items[OPTION_ITEMS] = { "CONTROLS", "DIFFICULTY", "LIVES", "DEMO SOUND", "SCREEN",
-	"VIDEO", "VOLUME", "SOUND", "BACK" };
+static const char *const option_items[OPTION_ITEMS] = { "CONTROLS", "DIFFICULTY", "LIVES", "CONTINUES", "DEMO SOUND",
+	"SCREEN", "VIDEO", "VOLUME", "SOUND", "BACK" };
 static const char *const video_items[VIDEO_ITEMS] = { "WINDOW", "FULL SCREEN", "PIXELS", "INTEGER SCALE", "WIDE",
 	"VSYNC", "FPS", "BACK" };
 #endif
@@ -175,7 +178,7 @@ static void menu_page(uint32_t pressed)
 			console_start_arcade(console.last_presser);    /* (its coin: PAGE_STARTING) */
 			break;
 		case MENU_MR_PLOW:
-			open_page(PAGE_MR_PLOW, PLOW_BOSS_RUSH);
+			open_page(PAGE_MR_PLOW, PLOW_FREE_PLAY);
 			break;
 		case MENU_OPTIONS:
 			open_page(PAGE_OPTIONS, 0);
@@ -199,6 +202,9 @@ static void plow_page(uint32_t pressed)
 		return;
 	switch (console.choice)
 	{
+		case PLOW_FREE_PLAY:
+			free_play_start(console.last_presser);
+			break;
 		case PLOW_BOSS_RUSH:
 			boss_rush_start(console.last_presser);
 			break;
@@ -251,6 +257,18 @@ static void options_page(uint32_t pressed)
 			settings->game_lives = step_value(settings->game_lives, by, CONSOLE_LIVES_FEWEST, CONSOLE_LIVES_MOST);
 			settings_touched = true;
 			break;
+		case OPTION_CONTINUES:
+		{
+			/* (0 to 9, then UNLIMITED: the console's, ARCADE's continues as its game starts) */
+			const int unlimited = CONSOLE_CONTINUES_MOST + 1;
+			const int place = settings->game_continues == CONSOLE_CONTINUES_UNLIMITED ? unlimited
+				: settings->game_continues;
+			const int next = step_value(place, by, 0, unlimited);
+
+			settings->game_continues = next == unlimited ? CONSOLE_CONTINUES_UNLIMITED : next;
+			settings->changed = true;
+			break;
+		}
 		case OPTION_DEMO_SOUND:
 			settings->demo_sound = !settings->demo_sound;
 			settings_touched = true;
@@ -646,6 +664,11 @@ static void options_overlay(void)
 	option_line(option_items, OPTION_DIFFICULTY, difficulties[console_settings.game_difficulty]);
 	snprintf(value, sizeof(value), "%d", console_settings.game_lives);
 	option_line(option_items, OPTION_LIVES, value);
+	if (console_settings.game_continues == CONSOLE_CONTINUES_UNLIMITED)
+		snprintf(value, sizeof(value), "UNLIMITED");
+	else
+		snprintf(value, sizeof(value), "%d", console_settings.game_continues);
+	option_line(option_items, OPTION_CONTINUES, value);
 	option_line(option_items, OPTION_DEMO_SOUND, console_settings.demo_sound ? "ON" : "OFF");
 	option_line(option_items, OPTION_SCREEN, console_settings.upside_down ? "UPSIDE DOWN" : "NORMAL");
 	option_line(option_items, OPTION_VIDEO, NULL);

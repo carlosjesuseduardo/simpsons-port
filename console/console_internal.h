@@ -46,7 +46,8 @@ enum
 };
 
 /* The lives a credit gives and the continues after the first credit in a game of the console's own modes (TMNT's
-   Splinter Way's: guideline 10): ARCADE keeps the cabinet's (OPTIONS' LIVES, as many continues as STARTs) */
+   Splinter Way's: guideline 10): ARCADE keeps the cabinet's lives (OPTIONS' LIVES) and OPTIONS' CONTINUES; FREE PLAY
+   the same lives and as many continues as STARTs */
 #define MODE_LIVES              5
 #define MODE_CONTINUES          3
 #define CONTINUES_UNLIMITED     (-1)
@@ -95,6 +96,7 @@ typedef struct
 enum
 {
 	MODE_NONE,                 /* ARCADE's game, the Konami code page's */
+	MODE_FREE_PLAY,            /* FREE PLAY: the game as ARCADE's, OPTIONS' lives, as many continues as STARTs */
 	MODE_BOSS_RUSH,            /* the bosses one after another */
 	MODE_BONUS_GAMES,          /* the two bonus stages in a row */
 	MODE_FRANK_GRIMES          /* FRANK GRIMES LIFE: one player against what four would have */
@@ -117,6 +119,10 @@ bool console_slot_joining(int slot);
 /* The game ended where it is (QUIT GAME, RESTART, the character choice left): the attract mode at its next frame */
 void console_end_game(void);
 
+/* Whether the game shows a scene a button skips (check_skip's: a story, a title card, a stage's or a bonus game's
+   end, the ending): no pause there, a START skips it */
+bool console_in_scene(void);
+
 /* Whether the console runs the arcade's own attract mode and controls (--arcade-start, console_arcade_test): the
    game's functions in the console's versions then do what the arcade's do, but WIDE's */
 bool console_arcade_testing(void);
@@ -135,11 +141,11 @@ void console_settings_into_game(void);
    every player (the continues over: the attract mode, the menu) or at the pause's QUIT GAME, and RESTART starts it
    again the same. What a mode does besides (its own rules each frame) goes in game_mode_frame's (console.c) */
 void console_start_game(int player, int step, int lives, int continues);
-/* ARCADE: the cabinet's game from its beginning, OPTIONS' lives, as many continues as STARTs */
+/* ARCADE: the cabinet's game from its beginning, OPTIONS' lives and continues */
 void console_start_arcade(int player);
 
 /* The game's lives and continues (guideline 10): a mode sets its own as its game starts (MODE_LIVES, MODE_CONTINUES;
-   LIVES_CABINET and CONTINUES_UNLIMITED: ARCADE's), and the lives a credit gives go into the game (lives_per_credit)
+   LIVES_CABINET and CONTINUES_UNLIMITED: FREE PLAY's), and the lives a credit gives go into the game (lives_per_credit)
    until the game is over */
 void console_set_mode_lives(int lives, int continues);
 /* Whether 'player' may put a credit in: his first, or a continue while the mode has some left for him; and his credit
@@ -171,8 +177,9 @@ bool konami_covering(void);
 
 /* ---- MR. PLOW MODE's modes (modes.c) ---- */
 
-/* Each starts its game for 'player' (the character choice first, as ARCADE's): BOSS RUSH from stage 1, BONUS GAMES
-   at bonus 1, FRANK GRIMES LIFE from the game's beginning */
+/* Each starts its game for 'player' (the character choice first, as ARCADE's): FREE PLAY and FRANK GRIMES LIFE from
+   the game's beginning, BOSS RUSH from stage 1, BONUS GAMES at bonus 1 */
+void free_play_start(int player);
 void boss_rush_start(int player);
 void bonus_games_start(int player);
 void frank_grimes_start(int player);

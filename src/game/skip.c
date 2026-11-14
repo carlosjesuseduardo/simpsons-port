@@ -13,7 +13,7 @@
 
 /* After waiting A frames, whether a player in the game newly presses attack or jump (carry), which skips
    a story. */
-void check_skip(uint16_t wait, uint16_t *p_presses_addresses, uint32_t *p_skipped)
+void CONSOLE_ORIGINAL(check_skip)(uint16_t wait, uint16_t *p_presses_addresses, uint32_t *p_skipped)
 {
 	uint16_t presses_addresses = (uint16_t)*p_presses_addresses;
 	uint32_t skipped = *p_skipped;

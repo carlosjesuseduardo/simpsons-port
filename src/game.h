@@ -1755,6 +1755,7 @@ uint16_t CONSOLE_ORIGINAL(insert_high_score)(uint16_t place);
 
 /* game/skip.c: whether a player's button skips what is on (a story) */
 void check_skip(uint16_t wait, uint16_t *p_presses_addresses, uint32_t *p_skipped);
+void CONSOLE_ORIGINAL(check_skip)(uint16_t wait, uint16_t *p_presses_addresses, uint32_t *p_skipped);
 
 /* game/start.c: the game's start: the four portraits the players join on */
 uint32_t step_portraits(uint16_t u);

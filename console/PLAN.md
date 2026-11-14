@@ -388,3 +388,26 @@ keeps from 12 to 19. Every change the console makes is checked with the console'
     shell's three games.
   - Not checked yet: BOSS RUSH past its third boss (the blind player loses there), the kept table written after a
     new score's name entry (read back only), save states in a bonus stage, a story and with four players.
+- **13-11-2026, the plan closed here** (Sebas: "Cerremos el plan. Y yo activo otra sesión para el lan"): done 1-10,
+  12-18 (19 looked at: the World set has no Japanese music, that is the 2-player sets' 072-g03); 11, MULTIPLAYER over
+  the LAN, goes to a session of its own (arcade-lan as tmnt-port's console/lan.c). Not pushed until it is: b05bf45.
+- **13-11-2026, the scenes without the pause, FREE PLAY and ARCADE's continues** (Sebas: "en las cinematicas que no se
+  pause, en mr plow, agreguemos un modo normal de juego, pero sin limite de continues, en arcade, agrega en options el
+  limite de continues"; the runs under build/continues_work/):
+  - **The scenes**: check_skip in console/replaced.txt (game/skip.c: what a button skips, after its wait: the stories,
+    the stages' title cards, the stages' and the bonus games' ends, the bonus games' instructions, the ending). While
+    the game calls it (and 30 frames after, its parts' gaps), and all through the stories' and the ending's steps (1,
+    5, 10, 14, 16), console_can_pause is false: no pause by START, Escape, Back, the touch screen or the pause asked
+    for; a START of a player whose character plays skips the scene as his attack does (one frame let go, two of the
+    attack). Checked: a pause asked for in story 1 (frame 1150) did not open, the one in stage 1's play (2600) did;
+    story 1 with START every 60 frames reached stage 1 at frame 1300, without it at 1800.
+  - **FREE PLAY**, MR. PLOW MODE's first line (MODE_FREE_PLAY, free_play_start in modes.c; the modes' order and
+    console.c's way back to the page from it): ARCADE's game, OPTIONS' lives, as many continues as STARTs whatever
+    OPTIONS' CONTINUES says, and after the ending the menu (as the modes'). The name can change (Sebas named none).
+    Checked: an idle Marge with START every 400 frames put her sixth credit in (a mode's 3 continues stop at the
+    fourth), "mode free play" all along.
+  - **CONTINUES** in OPTIONS, after LIVES: ARCADE's continues after a player's first credit, 0 to 9 or UNLIMITED
+    (console_settings.game_continues, 3 by default as the modes' and TMNT's; simpsons.ini's `continues=3|unlimited`),
+    console_start_arcade's. Checked: OPTIONS' frames (3 by default, 1 after two LEFTs); ARCADE with 1: Marge's second
+    credit, then her START opened nothing, GAME OVER and the menu (frame 12500).
+  - The version 1.0.0 (CMakeLists.txt's project), for the release.

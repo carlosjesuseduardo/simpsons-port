@@ -1873,15 +1873,18 @@ static char settings_path[1100];
 static void save_settings(void)
 {
 	const console_settings_t *settings = &console_settings;
+	char continues[16] = "unlimited";    /* (ARCADE's continues: unlimited or 0-9) */
 	FILE *output;
 
 	if (scripted || !settings_path[0] || (output = fopen(settings_path, "w")) == NULL)
 		return;
+	if (settings->game_continues != CONSOLE_CONTINUES_UNLIMITED)
+		snprintf(continues, sizeof(continues), "%d", settings->game_continues);
 	fprintf(output, "window_scale=%d\nfull_screen=%d\npixels=%s\ninteger_scale=%d\nwide=%s\nvsync=%d\nvolume=%d\n"
-		"fps=%d\ndifficulty=%s\nlives=%d\ndemo_sound=%d\nscreen=%s\nsound=%s\nbart_shirt=%s\n", settings->window_scale,
-		settings->full_screen, console_pixel_names[settings->pixels], settings->integer_scale,
+		"fps=%d\ndifficulty=%s\nlives=%d\ncontinues=%s\ndemo_sound=%d\nscreen=%s\nsound=%s\nbart_shirt=%s\n",
+		settings->window_scale, settings->full_screen, console_pixel_names[settings->pixels], settings->integer_scale,
 		console_wide_names[settings->wide], settings->vsync, settings->volume, settings->fps,
-		console_difficulty_names[settings->game_difficulty], settings->game_lives, settings->demo_sound,
+		console_difficulty_names[settings->game_difficulty], settings->game_lives, continues, settings->demo_sound,
 		settings->upside_down ? "upside down" : "normal", settings->stereo ? "stereo" : "mono",
 		settings->bart_shirt ? "orange" : "arcade");
 	fclose(output);
@@ -1916,6 +1919,10 @@ static void load_settings(void)
 			settings->integer_scale = number != 0;
 		else if (sscanf(line, "lives=%d", &number) == 1 && number >= CONSOLE_LIVES_FEWEST && number <= CONSOLE_LIVES_MOST)
 			settings->game_lives = number;
+		else if (strcmp(line, "continues=unlimited") == 0)
+			settings->game_continues = CONSOLE_CONTINUES_UNLIMITED;    /* (ARCADE's continues: unlimited or 0-9) */
+		else if (sscanf(line, "continues=%d", &number) == 1 && number >= 0 && number <= CONSOLE_CONTINUES_MOST)
+			settings->game_continues = number;
 		else if (sscanf(line, "demo_sound=%d", &number) == 1)
 			settings->demo_sound = number != 0;
 		else if (strncmp(line, "screen=", 7) == 0)

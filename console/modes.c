@@ -153,6 +153,15 @@ void modes_game_starting(void)
 	ending_seen = false;
 }
 
+/* FREE PLAY (Sebas: "en mr plow, agreguemos un modo normal de juego, pero sin limite de continues"): ARCADE's game,
+   OPTIONS' lives, as many continues as STARTs whatever OPTIONS' CONTINUES says; after its ending, the menu */
+void free_play_start(int player)
+{
+	console.konami = false;
+	console.mode = MODE_FREE_PLAY;
+	console_start_game(player, STEP_FIRST_STAGE, LIVES_CABINET, CONTINUES_UNLIMITED);
+}
+
 void boss_rush_start(int player)
 {
 	console.konami = false;
@@ -463,7 +472,7 @@ void modes_overlay(console_picture *frame)
 const char *modes_describe(void)
 {
 	static char text[96];
-	static const char *const names[] = { "none", "boss rush", "bonus games", "frank grimes life" };
+	static const char *const names[] = { "none", "free play", "boss rush", "bonus games", "frank grimes life" };
 
 	snprintf(text, sizeof(text), "mode %s%s, boss %d%s, player_count %u, rank %u, difficulty %u",
 		names[console.mode >= 0 && console.mode <= MODE_FRANK_GRIMES ? console.mode : 0],

@@ -23,3 +23,5 @@ insert_high_score        # REPEAT CHARACTERS: a slot's score goes in the high sc
 name_entry_draw_picture  # and its face in the name entry
 player_flash_palette     # and the box that flashes when a player is hit is his slot's, not his character's slot's
 count_players_in_game    # FRANK GRIMES LIFE (modes.c): the game counts four players while its one player plays
+check_skip               # the scenes a button skips (the stories, the title cards, the stages' and bonus games' ends,
+                         # the ending): no pause there, a START skips them as the attack does (console.c)

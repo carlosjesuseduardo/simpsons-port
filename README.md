@@ -55,18 +55,21 @@ What a tool makes has the game's data in it: it is yours alone, never share it. 
 - **The menu on the TV**: the family's TV from the attract mode, the title on its screen.
 - **ARCADE**: the arcade's game with no coins: each player picks a character on the game's own portraits, one each,
   and START brings a player in at any time, up to four. After a continue, or for a new player, START picks again.
+  OPTIONS sets its lives and its continues (0 to 9, or UNLIMITED).
 - **MR. PLOW MODE**:
+  - **FREE PLAY**: the arcade game from stage 1, as many continues as you like.
   - **BOSS RUSH**: the bosses one after another, from the wrestler to Mr. Burns, each stage crossed to its boss
     out of sight.
   - **BONUS GAMES**: the two bonus stages in a row, for one to four players, with their results.
   - **FRANK GRIMES LIFE**: one player, the whole game, against what four players would face.
-- **OPTIONS**: controls for four players, difficulty, lives, demo sound, screen, video (window, full screen,
-  sharp, smooth, bilinear or CRT pixels, integer scale, WIDE AUTO, 16:10, 16:9 or 20:9, VSYNC, FPS), volume, and
-  SOUND: MONO, as the cabinet wires it, or STEREO, the music's channels where the program pans them. The version is
-  under the menu and in OPTIONS.
+- **OPTIONS**: controls for four players, difficulty, lives, ARCADE's continues, demo sound, screen, video (window,
+  full screen, sharp, smooth, bilinear or CRT pixels, integer scale, WIDE AUTO, 16:10, 16:9 or 20:9, VSYNC, FPS),
+  volume, and SOUND: MONO, as the cabinet wires it, or STEREO, the music's channels where the program pans them. The
+  version is under the menu and in OPTIONS.
 - **WIDE**: the picture as wide as your screen (AUTO follows its shape), the stages drawn past the cabinet's 320
   columns, the players' boxes in the middle.
-- **The pause** in a game: CONTINUE, SAVE STATE, LOAD STATE, RESTART, QUIT GAME.
+- **The pause** in a game: CONTINUE, SAVE STATE, LOAD STATE, RESTART, QUIT GAME. In the story scenes, the stages'
+  title cards and ends and the ending, START skips the scene instead (as the attack does), and nothing pauses there.
 - **The high scores** are kept between sessions (the cabinet forgets them at power-off).
 - **Bart's shirt** is orange, as on the show (the cabinet dresses him in light blue).
 - And the Konami code on the menu: a stage select, infinite lives or health, and two or more players with the same
