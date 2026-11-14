@@ -9,7 +9,7 @@
  *    Author:      Sebastian Toyos
  *
  *    license:BSD-3-Clause
- *    PORTS is what the stock firmware's Roms/PORTS takes: the launchers The Simpsons.sh and The Simpsons Arcade.sh
+ *    PORTS is what the stock firmware's Roms/PORTS takes: the launchers The Simpsons Arcade Game.sh and The Simpsons Arcade.sh
  *    and beside them the folder simpsons, with both games, the console's letters and CONTROLS' button pictures
  *    (font.bmp, input_prompts.bmp) and the assets pack, which the tool makes from the player's simpsons.zip as the
  *    computer's first run does (ports/switch/nsp/rom_pack.c). Written in the folder the player picks: beside the
@@ -31,15 +31,15 @@
 #define make_folder(path) mkdir(path, 0777)
 #endif
 
-#define LAUNCHER      "The Simpsons.sh"
-#define ARCADE_LAUNCHER "The Simpsons Arcade.sh"    /* (The Simpsons Arcade's, beside The Simpsons': both games in the
+#define LAUNCHER      "The Simpsons Arcade Game.sh"
+#define ARCADE_LAUNCHER "The Simpsons Arcade.sh"    /* (The Simpsons Arcade's, beside The Simpsons Arcade Game's: both games in the
                                                        folder simpsons) */
 #define GAME_FOLDER   "simpsons"
 #define ASSETS_FILE   "simpsons.assets"
 #define MAKING_SUFFIX ".making"    /* the pack until it is whole */
 
 /* The game's build: the files PORTS gets of it, as they are in it and in PORTS */
-static const char *const build_files[] = { LAUNCHER, ARCADE_LAUNCHER, GAME_FOLDER "/The Simpsons",
+static const char *const build_files[] = { LAUNCHER, ARCADE_LAUNCHER, GAME_FOLDER "/The Simpsons Arcade Game",
 	GAME_FOLDER "/The Simpsons Arcade", GAME_FOLDER "/font.bmp", GAME_FOLDER "/input_prompts.bmp" };
 
 #define BUILD_FILES ((int)(sizeof(build_files) / sizeof(build_files[0])))

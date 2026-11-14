@@ -582,3 +582,21 @@ only by that port's CI.
   console/PLAN.md, 11); G (the distribution maker)
   and the other ports' Steam Deck installers later, each in its own session. b05bf45 stays local until LAN is in
   (Sebas: "No hagas el ci si falta el lan").
+- **14-11-2026, the players' issue 2 (the Switch)** (Sebas: "acomodá lo de switch"): both games' folder on the SD card
+  is sdmc:/switch/simpsons-arcade/ (1.0.0's sdmc:/switch/simpsons/ is The Simpsons: Hit & Run's port's too; Sebas: "le
+  pondría the simpsons arcade"). At the first start without it, the games copy their own files from the old folder
+  (switch_take_old_folder: simpsons.zip, simpsons.assets, simpsons.scores, simpsons.state, simpsons.nv by their names;
+  simpsons.ini and controls.ini only with their own key and first line) and leave it as it was. The Simpsons on the
+  Switch no longer goes full screen (apply_settings, toggle_full_screen): devkitPro's SDL has its desktop mode
+  1920 x 1080 always (SWITCH_VideoInit, read in libSDL2.a's SDL_switchvideo.o), so SDL_WINDOW_FULLSCREEN_DESKTOP made the
+  window 1080p and the 720p screen showed part of the picture (the .nsp's screenshot in the issue). The pack, the
+  package's README-switch.txt and the README say the new folder. tmnt-port, outrunners-port and segasonic-port make
+  their Switch window full screen the same way: to look at in their sessions.
+- **14-11-2026, the console version's name** (Sebas: "en los nombres del apk y los exe, que sea the arcade game"): The
+  Simpsons is The Simpsons Arcade Game in every build and package (the .exe, the .app, the Linux executable, the .apk,
+  the .ipa, the .nro and the .nsp, the Anbernic's launcher, the window's title, the HOME menu's and the launchers'
+  names, the makers' defaults), The Simpsons Arcade as it was. Kept, so nothing a player has is lost: the folder of
+  what the games keep (~/.local/share/The Simpsons, ~/Library/Application Support/The Simpsons), Simpsons APK's key
+  folder, the Android and iOS identifiers, the Switch's title ids. The makers' buttons say "Make the .nsp files" and
+  "Make the .apk files" (the new name is 304 pixels in their letters, the buttons 300). Checked: the Windows games and
+  the three makers built (MSVC), the Switch's two .nro (devkitPro), rom_in_executables none in the games.

@@ -1,8 +1,0 @@
-#!/bin/sh
-# The Simpsons for Anbernic's H700 handhelds (stock firmware): the console version in the folder simpsons beside this
-# script, with the firmware's SDL2; what it says goes to simpsons/simpsons.log
-HERE=$(cd "$(dirname "$0")" && pwd)
-cd "$HERE/simpsons" || exit 1
-chmod +x "./The Simpsons" 2>/dev/null
-"./The Simpsons" > simpsons.log 2>&1
-sync

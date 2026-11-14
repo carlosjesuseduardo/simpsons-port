@@ -85,7 +85,7 @@ jobs:
         run: cmake --build build/cmake --config Release --parallel
 
       # what a player runs (no headless runs, no build leftovers, no devices' tools), as the build packs it locally
-      # on Windows (simpsons_package, CMakeLists.txt): the folder simpsons with The Simpsons Arcade and The Simpsons
+      # on Windows (simpsons_package, CMakeLists.txt): the folder simpsons with The Simpsons Arcade and The Simpsons Arcade Game
       # (the .apps on macOS, signed ad hoc: with no certificate macOS offers to open them anyway, where a bundle
       # signed in part is "damaged"), their pictures beside them on Linux, the package's README.txt, the project's
       # LICENSE.txt and licenses/ (MAME's and ymfm's: the board's video and sound follow their behavior and tables;
@@ -180,7 +180,7 @@ jobs:
   # The Nintendo Switch: The Simpsons' and The Simpsons Arcade's .nsp pieces (main, main.npdm, control.nacp, icon.jpg
   # each: build/bin/switch/simpsons and simpsons-arcade), with devkitPro's toolchain in its own image, and their .nro
   # without an assets pack (build/bin/switch-nro), which take the assets out of the player's simpsons.zip in
-  # sdmc:/switch/simpsons/ at their first start. The HOME menu's icon is the repository's (ports/switch/icon.jpg)
+  # sdmc:/switch/simpsons-arcade/ at their first start. The HOME menu's icon is the repository's (ports/switch/icon.jpg)
   switch:
     name: switch
     runs-on: ubuntu-24.04
@@ -260,13 +260,13 @@ jobs:
           ready=build/bin/android-ready
           mkdir -p $ready
           "$apksigner" sign --ks "$RUNNER_TEMP/release.keystore" --ks-pass env:KEYSTORE_PASSWORD \
-            --ks-key-alias simpsons --key-pass env:KEYSTORE_PASSWORD --out "$ready/The Simpsons.apk" \
+            --ks-key-alias simpsons --key-pass env:KEYSTORE_PASSWORD --out "$ready/The Simpsons Arcade Game.apk" \
             build/bin/android/simpsons-base.apk
           "$apksigner" sign --ks "$RUNNER_TEMP/release.keystore" --ks-pass env:KEYSTORE_PASSWORD \
             --ks-key-alias simpsons --key-pass env:KEYSTORE_PASSWORD --out "$ready/The Simpsons Arcade.apk" \
             build/bin/android/simpsons-arcade-base.apk
           rm -f "$RUNNER_TEMP/release.keystore" $ready/*.idsig
-          "$apksigner" verify --verbose "$ready/The Simpsons.apk" "$ready/The Simpsons Arcade.apk"
+          "$apksigner" verify --verbose "$ready/The Simpsons Arcade Game.apk" "$ready/The Simpsons Arcade.apk"
 
       - uses: actions/upload-artifact@v7
         with:
@@ -333,7 +333,7 @@ jobs:
 
       - name: Check
         run: |
-          for game in "The Simpsons" "The Simpsons Arcade"; do
+          for game in "The Simpsons Arcade Game" "The Simpsons Arcade"; do
             app="build/bin/ios/$game.app"
             plist="$app/Info.plist"
             plutil -lint "$plist"
@@ -354,7 +354,7 @@ jobs:
             unzip -l "build/bin/ios/$game.ipa" | grep -q "Payload/$game.app/$game\$" || { echo "$game.ipa: no app"; exit 1; }
             if unzip -l "build/bin/ios/$game.ipa" | grep -E '\.assets$|\.zip$'; then echo "$game.ipa: assets in it"; exit 1; fi
           done
-          plutil -extract CFBundleIdentifier raw -o - "build/bin/ios/The Simpsons.app/Info.plist" | grep -qx io.github.cheviman.simpsons
+          plutil -extract CFBundleIdentifier raw -o - "build/bin/ios/The Simpsons Arcade Game.app/Info.plist" | grep -qx io.github.cheviman.simpsons
           plutil -extract CFBundleIdentifier raw -o - "build/bin/ios/The Simpsons Arcade.app/Info.plist" | grep -qx io.github.cheviman.simpsons.arcade
 
       - uses: actions/upload-artifact@v7
@@ -395,7 +395,7 @@ jobs:
           xcrun simctl bootstatus "$device" -b
           mkdir -p screens
           for game in "The Simpsons Arcade:io.github.cheviman.simpsons.arcade:simpsons-arcade" \
-            "The Simpsons:io.github.cheviman.simpsons:simpsons"; do
+            "The Simpsons Arcade Game:io.github.cheviman.simpsons:simpsons"; do
             IFS=: read -r name identifier log <<< "$game"
             xcrun simctl install "$device" "build/bin-ios-simulator/ios/$name.app"
             xcrun simctl launch "$device" "$identifier"
@@ -546,7 +546,7 @@ jobs:
         run: |
           ls -la dist
           version=$(sed -n 's/^project(simpsons VERSION \([0-9.]*\).*/\1/p' CMakeLists.txt)$SIMPSONS_VERSION_SUFFIX
-          { cat docs/releases/testing.md; echo; echo "This one: V$version in The Simpsons' OPTIONS, from $GITHUB_SHA."; } > notes.md
+          { cat docs/releases/testing.md; echo; echo "This one: V$version in The Simpsons Arcade Game's OPTIONS, from $GITHUB_SHA."; } > notes.md
           gh release delete testing-build --cleanup-tag --yes || true
           gh release create testing-build --prerelease --latest=false --target "$GITHUB_SHA" \
             --title "The Simpsons testing (V$version)" --notes-file notes.md \

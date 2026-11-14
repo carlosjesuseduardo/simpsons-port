@@ -448,7 +448,7 @@ if(SIMPSONS_WINDOW_PROGRAM AND NOT SIMPSONS_DEVICE)
 		# The Simpsons, the console version: its settings in simpsons.ini, OPTIONS > CONTROLS drawing the keys and
 		# buttons with Kenney's Input Prompts Pixel (CC0, ports/sdl2/prompts)
 		if(TARGET simpsons_console_game)
-			simpsons_window(simpsons_console "The Simpsons" io.github.cheviman.simpsons simpsons_console_game)
+			simpsons_window(simpsons_console "The Simpsons Arcade Game" io.github.cheviman.simpsons simpsons_console_game)
 		endif()
 
 		# The devices' makers (tmnt-port's), which the player runs on a computer with the player's own ROM set: its
@@ -493,14 +493,14 @@ if(SIMPSONS_WINDOW_PROGRAM AND NOT SIMPSONS_DEVICE)
 				ports/android/apk/make_apk.c ports/android/apk/zip.c ports/android/apk/sign.c ports/android/apk/key.c
 				ports/android/apk/ecdsa.c ports/switch/nsp/crypto.c ports/android/apk/window.c)
 			target_compile_definitions(simpsons_apk_maker PRIVATE
-				[[FOLDER_TITLE="The folder for The Simpsons.apk and The Simpsons Arcade.apk"]])
+				[[FOLDER_TITLE="The folder for The Simpsons Arcade Game.apk and The Simpsons Arcade.apk"]])
 			if(WIN32)
 				target_link_libraries(simpsons_apk_maker PRIVATE bcrypt)
 			endif()
 		endif()
 
 		# The Windows package (simpsons_package): what a player downloads, package/simpsons-windows-x64.zip in the build
-		# folder (SIMPSONS_PACKAGE_DIR), a folder simpsons with The Simpsons Arcade.exe and The Simpsons.exe (SDL2
+		# folder (SIMPSONS_PACKAGE_DIR), a folder simpsons with The Simpsons Arcade.exe and The Simpsons Arcade Game.exe (SDL2
 		# inside them with SIMPSONS_STATIC_SDL2, else SDL2.dll beside them), the pictures they write with (font.bmp,
 		# input_prompts.bmp), the package's README.txt (docs/package), the project's LICENSE.txt, and licenses/ with the
 		# terms of what is in it or what it follows: MAME's and ymfm's (the board's video and sound), SDL2's,
@@ -549,11 +549,11 @@ if(SIMPSONS_WINDOW_PROGRAM AND NOT SIMPSONS_DEVICE)
 				COMMAND ${CMAKE_COMMAND} -E tar cf ${SIMPSONS_PACKAGE_NAME}.zip --format=zip simpsons
 				WORKING_DIRECTORY ${SIMPSONS_PACKAGE_DIR}
 				DEPENDS simpsons simpsons_console
-				COMMENT "Packing The Simpsons Arcade and The Simpsons: ${SIMPSONS_PACKAGE_NAME}.zip"
+				COMMENT "Packing The Simpsons Arcade and The Simpsons Arcade Game: ${SIMPSONS_PACKAGE_NAME}.zip"
 				VERBATIM)
 		endif()
 	else()
-		message(WARNING "No SDL2: the games (The Simpsons Arcade and The Simpsons) are not built, only the development "
+		message(WARNING "No SDL2: the games (The Simpsons Arcade and The Simpsons Arcade Game) are not built, only the development "
 			"tools. -DSIMPSONS_STATIC_SDL2=ON builds SDL2 from its source into the games, as the packages do; or SDL2 "
 			"from the system, on Windows its development package for Visual C++ unpacked in build/downloads/sdl2 "
 			"(build/downloads/sdl2/SDL2-2.x.y/cmake)")

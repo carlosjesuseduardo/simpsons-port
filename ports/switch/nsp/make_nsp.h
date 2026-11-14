@@ -17,7 +17,7 @@
 #include <stdio.h>
 
 #define NSP_PATH_SIZE 1100
-#define NSP_FILE      "The Simpsons.nsp"
+#define NSP_FILE      "The Simpsons Arcade Game.nsp"
 #define NSP_ARCADE_FILE "The Simpsons Arcade.nsp"    /* (The Simpsons Arcade's, beside The Simpsons') */
 #define NSP_OWN_ICON  "icon.jpg"         /* the player's own icon, taken when it is beside the tool */
 
@@ -48,7 +48,7 @@ typedef void (*nsp_step)(void *context, const char *step);
 void nsp_take_dropped(nsp_inputs *inputs, const char *path);
 
 /* The inputs not given, beside the tool (in the folder 'here', with its separator): prod.keys (else in
-   .switch in the user's folder), simpsons.zip, the folder switch, The Simpsons.nsp, and the player's icon.jpg
+   .switch in the user's folder), simpsons.zip, the folder switch, The Simpsons Arcade Game.nsp, and the player's icon.jpg
    when it is there (else the build's own icon) */
 void nsp_defaults(nsp_inputs *inputs, const char *here);
 

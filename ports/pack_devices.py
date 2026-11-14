@@ -20,7 +20,7 @@
 
     The Simpsons' games also take their assets out of the player's simpsons.zip on the device itself
     (ports/sdl2/main.c's device_assets), so a package carries them ready as well, beside the tool's way: the
-    Switch's .nro in sd/switch/simpsons/ (--switch-nro), Android's APKs signed with the project's key in ready/
+    Switch's .nro in sd/switch/simpsons-arcade/ (--switch-nro), Android's APKs signed with the project's key in ready/
     (--android-ready, when the CI has the key), and Anbernic's folder anbernic/, which is the card's Roms/PORTS as
     it is. A README's line marked {ready} is there only with the signed APKs, one marked {no-ready} only without
     them.
@@ -56,7 +56,7 @@ KITS = [
 ]
 
 # the programs in the devices' folders (Anbernic's executables and launchers)
-DEVICE_PROGRAMS = ("The Simpsons", "The Simpsons Arcade", "The Simpsons.sh", "The Simpsons Arcade.sh")
+DEVICE_PROGRAMS = ("The Simpsons Arcade Game", "The Simpsons Arcade", "The Simpsons Arcade Game.sh", "The Simpsons Arcade.sh")
 
 PROGRAM = 0o755
 FILE = 0o644
@@ -160,8 +160,8 @@ def pack_ios(ipas, kits, out):
     top = "simpsons-ios"
     target = os.path.join(out, top + ".zip")
     found = sorted(name for name in os.listdir(need(ipas)) if name.endswith(".ipa"))
-    if found != ["The Simpsons Arcade.ipa", "The Simpsons.ipa"]:
-        sys.exit("pack_devices: %s has %s, not The Simpsons.ipa and The Simpsons Arcade.ipa" % (ipas, found))
+    if found != ["The Simpsons Arcade Game.ipa", "The Simpsons Arcade.ipa"]:
+        sys.exit("pack_devices: %s has %s, not The Simpsons Arcade Game.ipa and The Simpsons Arcade.ipa" % (ipas, found))
     with zipfile.ZipFile(target, "w") as archive:
         add_readme(archive, need(os.path.join(DOCS, "README-ios.txt")), top + "/README.txt", set())
         shared_files(archive, top, kits)
@@ -175,18 +175,18 @@ def main():
     parser.add_argument("--switch", required=True,
                         help="the Switch's games: simpsons/ and simpsons-arcade/, the .nsp's pieces")
     parser.add_argument("--switch-nro", required=True,
-                        help="the Switch's .nro without assets: The Simpsons.nro, The Simpsons Arcade.nro")
+                        help="the Switch's .nro without assets: The Simpsons Arcade Game.nro, The Simpsons Arcade.nro")
     parser.add_argument("--android", required=True,
                         help="Android's games: simpsons-base.apk, simpsons-arcade-base.apk")
     parser.add_argument("--android-ready", help="Android's APKs signed with the project's key (none: not in it)")
     parser.add_argument("--anbernic", required=True,
-                        help="Anbernic's games: The Simpsons.sh, The Simpsons Arcade.sh and simpsons/")
-    parser.add_argument("--ios", help="iOS's games: The Simpsons.ipa, The Simpsons Arcade.ipa (none: no iOS package)")
+                        help="Anbernic's games: The Simpsons Arcade Game.sh, The Simpsons Arcade.sh and simpsons/")
+    parser.add_argument("--ios", help="iOS's games: The Simpsons Arcade Game.ipa, The Simpsons Arcade.ipa (none: no iOS package)")
     parser.add_argument("--out", required=True, help="where the zips go")
     arguments = parser.parse_args()
     os.makedirs(arguments.out, exist_ok=True)
     games = {"switch": arguments.switch, "android": arguments.android, "anbernic": arguments.anbernic}
-    extras = {"switch": [(need(arguments.switch_nro), "sd/switch/simpsons", ".nro")], "android": [],
+    extras = {"switch": [(need(arguments.switch_nro), "sd/switch/simpsons-arcade", ".nro")], "android": [],
               "anbernic": []}
     if arguments.android_ready and os.path.isdir(arguments.android_ready) \
             and any(name.endswith(".apk") for name in os.listdir(arguments.android_ready)):

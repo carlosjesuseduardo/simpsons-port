@@ -6,7 +6,7 @@ iPad, and Anbernic's handhelds, built on its decompilation,
 and the Z80's) in C, checked frame by frame against MAME in state, picture and sound. Two games come out of it:
 
 - **The Simpsons Arcade**: the arcade game as it is: coins, the test mode, four players.
-- **The Simpsons**: the console version, the arcade game made for playing at home.
+- **The Simpsons Arcade Game**: the console version, the arcade game made for playing at home.
 
 This repository contains no game data: you bring your own ROM set (MAME's `simpsons`, 4 Players World, set 1), and
 the game takes its assets out of it.
@@ -34,10 +34,10 @@ and plays from them from then on.
 Each device has a package of its own, its games without assets, beside the tools that make your own of them on a
 computer (for Windows, macOS and Linux):
 
-- **Nintendo Switch** (`simpsons-switch.zip`): `The Simpsons.nro` and `The Simpsons Arcade.nro` for the Homebrew
-  Menu, with `simpsons.zip` in `/switch/simpsons/` on the SD card; or Simpsons NSP makes `The Simpsons.nsp` and
+- **Nintendo Switch** (`simpsons-switch.zip`): `The Simpsons Arcade Game.nro` and `The Simpsons Arcade.nro` for the Homebrew
+  Menu, with `simpsons.zip` in `/switch/simpsons-arcade/` on the SD card; or Simpsons NSP makes `The Simpsons Arcade Game.nsp` and
   `The Simpsons Arcade.nsp` for the HOME menu.
-- **Android** (`simpsons-android.zip`): Simpsons APK makes `The Simpsons.apk` and `The Simpsons Arcade.apk` on your
+- **Android** (`simpsons-android.zip`): Simpsons APK makes `The Simpsons Arcade Game.apk` and `The Simpsons Arcade.apk` on your
   computer, with the assets of your `simpsons.zip` inside, signed with a key of yours
   ([ports/android/apk](ports/android/apk/README.md)). Phones, tablets, foldables, and TVs with Android TV or Google
   TV (in the TV's apps, with a banner; the APKs carry 32-bit ARM too, for the Chromecast with Google TV).
@@ -112,7 +112,7 @@ cmake -S . -B build/cmake -DSIMPSONS_STATIC_SDL2=ON -DSIMPSONS_REFERENCE_TOOLS=O
 cmake --build build/cmake --config Release
 ```
 
-The games are `The Simpsons Arcade` and `The Simpsons`, in `build/bin/`: they take their assets out of
+The games are `The Simpsons Arcade` and `The Simpsons Arcade Game`, in `build/bin/`: they take their assets out of
 `simpsons.zip` the first time (beside them, or in `rom/`), and on Windows
 `cmake --build build/cmake --config Release --target simpsons_package` packs them as the releases do. Each device's
 build is in `ports/PLAN.md`; the console version's plan and what is done in `console/PLAN.md`. The decompilation

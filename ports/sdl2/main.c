@@ -11,7 +11,7 @@
  *    Usage: "The Simpsons Arcade" [--script FILE [--fast]] [--hashes FILE] [--video-hashes FILE] [--sound-hashes FILE]
  *                                 [--service] [--assets FOLDER|PACK] [--video-dump FRAME ... --video-dir DIR]
  *                                 [--eeprom FILE]
- *           "The Simpsons" [--assets FOLDER|PACK] [--script FILE] [--fast] [--actions FILE]
+ *           "The Simpsons Arcade Game" [--assets FOLDER|PACK] [--script FILE] [--fast] [--actions FILE]
  *                          [--video-dump FRAME ... --video-dir DIR] [--wide KIND] [--wide-check] [--arcade-start]
  *                          [--stereo] [--scores FILE] [--state FILE [--state-save FRAME] [--state-load]]
  *
@@ -50,7 +50,7 @@
  *    ports/anbernic) the screen is the window, whole (the Switch's 1280 x 720, The Simpsons' WIDE 16:9 there,
  *    SIMPSONS_SCREEN_WIDE; the handheld's 640 x 480), its refresh the system's (no VSYNC), and there is no first run's
  *    window: the pack a maker put in (the Switch's romfs, beside the handheld's executables), else the device's
- *    folder's (device_folder: sdmc:/switch/simpsons/, PORTS/simpsons/), made there from the player's simpsons.zip at
+ *    folder's (device_folder: sdmc:/switch/simpsons-arcade/, PORTS/simpsons/), made there from the player's simpsons.zip at
  *    the first start; with none, a message that says where to put it. What the games keep is in that folder too. The
  *    handheld's buttons are a game controller's, its MENU leaves the game and its volume keys are The Simpsons' VOLUME
  *    (SIMPSONS_HANDHELD_KEYS); the Switch's HOME leaves it (SIMPSONS_SYSTEM_EXIT, the console's menus).
@@ -156,7 +156,7 @@
 #include <string.h>
 
 #ifdef SIMPSONS_CONSOLE
-#define TITLE               "The Simpsons"
+#define TITLE               "The Simpsons Arcade Game"
 #define FILE_NAME           "simpsons"
 #define SETTINGS_FILE       "simpsons.ini"
 #define SCORES_FILE         "simpsons.scores"    /* the high score table (console/scores.c) */
@@ -168,8 +168,10 @@
 #endif
 #define SAVES_NAME          "The Simpsons"    /* the folder of what both games keep, where it is the user's own */
 #ifdef __SWITCH__
-#define SWITCH_FOLDER       "sdmc:/switch/simpsons"    /* both games' folder on the SD card: the ROM set, the pack, what
-                                                          they keep, their logs */
+#define SWITCH_FOLDER       "sdmc:/switch/simpsons-arcade"    /* both games' folder on the SD card: the ROM set, the
+                                                                 pack, what they keep, their logs */
+#define SWITCH_OLD_FOLDER   "sdmc:/switch/simpsons"    /* 1.0.0's, which The Simpsons: Hit & Run's port uses too (the
+                                                          players' issue 2): switch_take_old_folder */
 #endif
 #define CONTROLS_FILE       "controls.ini"    /* (each player's keys and buttons: controls.c) */
 #define MAPPINGS_FILE       "gamecontrollerdb.txt"    /* more game controllers for SDL (SDL_GameControllerDB's) */
@@ -881,6 +883,10 @@ static void toggle_full_screen(void)
 {
 	const bool full = (SDL_GetWindowFlags(window) & SDL_WINDOW_FULLSCREEN_DESKTOP) != SDL_WINDOW_FULLSCREEN_DESKTOP;
 
+#ifdef __SWITCH__
+	(void)full;
+	return;    /* (a keyboard's F11 on the Switch: its screen is the window already, apply_settings) */
+#endif
 	SDL_SetWindowFullscreen(window, full ? SDL_WINDOW_FULLSCREEN_DESKTOP : 0);
 #ifdef SIMPSONS_CONSOLE
 	console_settings.full_screen = full;
@@ -2033,6 +2039,11 @@ static void apply_settings(void)
 	applied_scale = console_settings.window_scale;
 	applied_full = (int)console_settings.full_screen;
 	applied_wide = console_wide_in_effect();    /* (WIDE AUTO's as the screen's shape asks: the window for it) */
+#ifdef __SWITCH__
+	return;    /* (the window is the Switch's 1280 x 720 screen already. Full screen would make it SDL's desktop mode,
+	              which devkitPro's SDL has 1920 x 1080 always (SWITCH_VideoInit): the picture drawn for 1080p and
+	              shown in part on the 720p screen, the players' issue 2. Docked, the system scales the 720p up) */
+#endif
 	SDL_SetWindowFullscreen(window, console_settings.full_screen ? SDL_WINDOW_FULLSCREEN_DESKTOP : 0);
 	if (!console_settings.full_screen)
 		SDL_SetWindowSize(window, view_width() * console_settings.window_scale,
@@ -2330,10 +2341,90 @@ static bool exists(const char *path)
 #define ROM_SET_FOLDER  "rom"
 #define ROM_SET_PROBE   "072-g02.16c"     /* a file of the set by MAME's name: a folder of its files */
 
+#ifdef __SWITCH__
+/* A file of 1.0.0's folder copied into SWITCH_FOLDER, when that has none of the name and, with a 'mark', the file's
+   first bytes have it (the file of that name is these games'); whether it was copied */
+static bool switch_copy_old(const char *name, const char *mark)
+{
+	char from[300], to[300], bytes[4097];
+	FILE *input, *output;
+	size_t count;
+	bool done = true;
+
+	snprintf(from, sizeof(from), SWITCH_OLD_FOLDER "/%s", name);
+	snprintf(to, sizeof(to), SWITCH_FOLDER "/%s", name);
+	if (exists(to) || (input = fopen(from, "rb")) == NULL)
+		return false;
+	if (mark)
+	{
+		count = fread(bytes, 1, sizeof(bytes) - 1, input);
+		bytes[count] = '\0';
+		if (!strstr(bytes, mark))
+		{
+			fclose(input);
+			return false;
+		}
+		rewind(input);
+	}
+	if ((output = fopen(to, "wb")) == NULL)
+	{
+		fclose(input);
+		return false;
+	}
+	while (done && (count = fread(bytes, 1, sizeof(bytes), input)) > 0)
+		done = fwrite(bytes, 1, count, output) == count;
+	done = !ferror(input) && done;
+	fclose(input);
+	done = fclose(output) == 0 && done;
+	if (!done)
+		remove(to);
+	return done;
+}
+
+/* 1.0.0 kept both games' files in sdmc:/switch/simpsons/, which The Simpsons: Hit & Run's port uses too (the players'
+   issue 2). At the first start with no SWITCH_FOLDER, these games' own files there are copied into it (both games',
+   whichever starts first), the old folder left as it was: what else is in it is the other game's. The settings and
+   the controls are taken only when they are these games' (their own key, their own first line); the others by their
+   names, these games' alone. A ROM set as the folder rom is not taken (its message says where it goes now). The names
+   copied, into 'copied' for the log; how many */
+static int switch_take_old_folder(char *copied, size_t size)
+{
+	static const struct
+	{
+		const char *name, *mark;
+	} files[] = {
+		{ ROM_SET_FILE, NULL },
+		{ GAME_ASSETS_PACK_FILE, NULL },
+		{ "simpsons.ini", "bart_shirt=" },             /* (The Simpsons' SETTINGS_FILE) */
+		{ "simpsons.scores", NULL },                   /* (SCORES_FILE) */
+		{ "simpsons.state", NULL },                    /* (STATE_FILE) */
+		{ "simpsons.nv", NULL },                       /* (The Simpsons Arcade's EEPROM_FILE) */
+		{ CONTROLS_FILE, "; The Simpsons' controls" }, /* (controls.c's first line) */
+	};
+	struct stat folder;
+	int count = 0;
+
+	copied[0] = '\0';
+	if (stat(SWITCH_FOLDER, &folder) == 0 || stat(SWITCH_OLD_FOLDER, &folder) != 0)
+		return 0;
+	mkdir("sdmc:/switch", 0777);
+	mkdir(SWITCH_FOLDER, 0777);
+	for (size_t index = 0; index < sizeof(files) / sizeof(files[0]); index++)
+		if (switch_copy_old(files[index].name, files[index].mark))
+		{
+			const size_t length = strlen(copied);
+
+			snprintf(copied + length, size - length, "%s%s", count ? ", " : "", files[index].name);
+			count++;
+		}
+	return count;
+}
+#endif
+
 static void fail(const char *message);
 
 /* A device's own folder, where the player puts the ROM set (or a pack) and the game makes its assets pack of it: the
-   Switch's sdmc:/switch/simpsons/, the handheld's PORTS/simpsons/ (beside both executables), both games'; Android's
+   Switch's sdmc:/switch/simpsons-arcade/, the handheld's PORTS/simpsons/ (beside both executables), both games'; Android's
    app folder on its storage (Android/data/<the app>/files/, where its log is), each game's own. The caller frees it
    (SDL_free) */
 static char *device_folder(void)
@@ -2708,9 +2799,15 @@ int main(int argc, char **argv)
 	const char *state_option = NULL;   /* --state */
 	char scores_path[1100] = "";
 #endif
+#ifdef __SWITCH__
+	char taken[300];
+	const int taken_count = switch_take_old_folder(taken, sizeof(taken));    /* (before open_log makes the folder) */
+#endif
 
 	open_log();
 #ifdef __SWITCH__
+	if (taken_count > 0)
+		fprintf(stderr, "From " SWITCH_OLD_FOLDER "/ (1.0.0's folder) into " SWITCH_FOLDER "/: %s\n", taken);
 	romfsInit();    /* (the assets pack in the game's romfs: the .nsp's, or an .nro made with the player's pack) */
 #endif
 	for (int index = 1; index < argc; index++)

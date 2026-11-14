@@ -2,7 +2,7 @@
 
 `Simpsons APK` (`Simpsons APK.exe` on Windows) makes the Android games' APKs on the player's computer, as
 `Simpsons NSP` makes the Switch's `.nsp`s: each game's Android build with the assets of the player's ROM set,
-signed with a key of the player's own. It makes both at once, `The Simpsons.apk` and `The Simpsons Arcade.apk`
+signed with a key of the player's own. It makes both at once, `The Simpsons Arcade Game.apk` and `The Simpsons Arcade.apk`
 beside it.
 Nothing it reads or writes leaves the computer, and the APKs are their player's alone: **never share them**.
 
@@ -29,26 +29,26 @@ not found, or what is wrong with it):
 - **The game's Android build**: `simpsons-base.apk` in the folder `android` beside the tool (The Simpsons Arcade's,
   `simpsons-arcade-base.apk`, beside it);
 - **Signing key**: yours, kept from before, or made with the first APK (below);
-- **Output folder**: where `The Simpsons.apk` and `The Simpsons Arcade.apk` go, beside the tool unless you choose
+- **Output folder**: where `The Simpsons Arcade Game.apk` and `The Simpsons Arcade.apk` go, beside the tool unless you choose
   another.
 
 Drop your files on the window and it takes each by what it is: an `.apk` is the game's Android build, a
 `.png` or `.jpg` the icon, anything else the ROM set (`simpsons.zip`, or a folder of its files). **Choose the
-output folder** opens your system's folder dialog; **Make The Simpsons.apk**, or Enter, makes it: the window
+output folder** opens your system's folder dialog; **Make The Simpsons Arcade Game.apk**, or Enter, makes it: the window
 shows the step it is at, then the APK's size, or what failed.
 
 Files dropped on the tool itself, not on its window, are taken the same way, and it makes the APK at once in
 its console. With options, from a command line, it is a console program and nothing else:
 
 ```
-Simpsons APK --rom simpsons.zip --icon my_icon.png --banner my_banner.jpg --base android/simpsons-base.apk --out The Simpsons.apk
+Simpsons APK --rom simpsons.zip --icon my_icon.png --banner my_banner.jpg --base android/simpsons-base.apk --out The Simpsons Arcade Game.apk
 ```
 
 When it cannot show its window (no display, no `font.bmp` beside it, a build without SDL2), the tool started
 with nothing makes the APK at once with the defaults, in its console.
 
-Copy `The Simpsons.apk` to the phone and open it there (Android asks once to allow installing from that app),
-or install it from the computer with `adb install -r The Simpsons.apk`.
+Copy `The Simpsons Arcade Game.apk` to the phone and open it there (Android asks once to allow installing from that app),
+or install it from the computer with `adb install -r The Simpsons Arcade Game.apk`.
 
 ### The signing key
 
@@ -112,8 +112,8 @@ built in); without SDL2 the tool is its command line alone. It lands in `build/b
 "build/bin/Simpsons APK" --rom rom
 ```
 
-An APK is checked with the SDK's own tools: `apksigner verify --verbose --min-sdk-version 24 "The Simpsons.apk"`
-and `zipalign -c -p 4 "The Simpsons.apk"`.
+An APK is checked with the SDK's own tools: `apksigner verify --verbose --min-sdk-version 24 "The Simpsons Arcade Game.apk"`
+and `zipalign -c -p 4 "The Simpsons Arcade Game.apk"`.
 
 | File | |
 |---|---|

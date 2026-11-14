@@ -1,5 +1,5 @@
-The Simpsons Arcade and The Simpsons
-====================================
+The Simpsons Arcade and The Simpsons Arcade Game
+================================================
 
 Konami's The Simpsons (1991), the arcade game for four players, as a native game: decompiled to C and
 checked frame by frame against MAME, github.com/cheviman/simpsons-port. Nothing of the game comes in
@@ -7,13 +7,13 @@ this package: it takes the game's graphics and sounds out of your own ROM set.
 
 Two games come in it, the same program:
 - The Simpsons Arcade, the arcade game as it is: coins, the test mode, the four players, its EEPROM.
-- The Simpsons, the console version: the game made for playing at home, with menus of its own and no
-  coins (START brings a player in).
+- The Simpsons Arcade Game, the console version: the game made for playing at home, with menus of its own
+  and no coins (START brings a player in).
 
-They are "The Simpsons Arcade.exe" and "The Simpsons.exe" on Windows, "The Simpsons Arcade.app" and
-"The Simpsons.app" on macOS, and "The Simpsons Arcade" and "The Simpsons" on Linux. On macOS each comes
-in a package of its own: simpsons-macos-universal.zip has The Simpsons, and
-simpsons-arcade-macos-universal.zip The Simpsons Arcade.
+They are "The Simpsons Arcade.exe" and "The Simpsons Arcade Game.exe" on Windows, "The Simpsons Arcade.app"
+and "The Simpsons Arcade Game.app" on macOS, and "The Simpsons Arcade" and "The Simpsons Arcade Game" on
+Linux. On macOS each comes in a package of its own: simpsons-macos-universal.zip has The Simpsons Arcade Game,
+and simpsons-arcade-macos-universal.zip The Simpsons Arcade.
 
 What you need
 -------------
@@ -30,14 +30,13 @@ on both games start from it and never open the ROM set again. A new version of t
 again from the ROM set when it needs to (keep simpsons.zip where it was, or drop it on the window
 again). simpsons.assets comes from your ROM set, so it is yours alone: never share it.
 
-macOS: the .apps are not signed with a certificate. The first time, open one with a right click and
-Open (on macOS 15 and later: System Settings, Privacy & Security, Open Anyway).
-Linux: start "./The Simpsons Arcade" or "./The Simpsons" from the folder; the games need SDL2's usual
-libraries of a desktop (X11 or Wayland, ALSA or PulseAudio), which they load themselves.
-Steam Deck (or any Linux): in desktop mode, put simpsons.zip in this folder (or in ~/Downloads) and run
-install.sh: it copies the folder to ~/Games/simpsons, adds both games to the applications menu and to
-Steam as non-Steam games (closing Steam meanwhile and starting it again), so they show in Game Mode.
-uninstall.sh takes them out again; the saves stay.
+macOS: the .apps are not signed with a certificate. The first time, open one with a right click and Open (on
+macOS 15 and later: System Settings, Privacy & Security, Open Anyway). Linux: start "./The Simpsons Arcade" or
+"./The Simpsons Arcade Game" from the folder; the games need SDL2's usual libraries of a desktop (X11 or
+Wayland, ALSA or PulseAudio), which they load themselves. Steam Deck (or any Linux): in desktop mode, put
+simpsons.zip in this folder (or in ~/Downloads) and run install.sh: it copies the folder to ~/Games/simpsons,
+adds both games to the applications menu and to Steam as non-Steam games (closing Steam meanwhile and starting
+it again), so they show in Game Mode. uninstall.sh takes them out again; the saves stay.
 
 What the games keep goes in the same folder as simpsons.assets: controls.ini (each player's keys and
 buttons, both games), simpsons.ini (The Simpsons' OPTIONS), simpsons.nv (The Simpsons Arcade's EEPROM:
@@ -64,8 +63,8 @@ Back puts a coin in. A controller the games do not know, or know wrong, takes it
 (SDL_GameControllerDB's format) in gamecontrollerdb.txt, beside the games or in the folder of what
 they keep: its line goes over their own.
 
-Playing The Simpsons
---------------------
+Playing The Simpsons Arcade Game
+--------------------------------
 The menu: ARCADE (the arcade game at home: each player picks a character on the game's portraits),
 MR. PLOW MODE (FREE PLAY with as many continues as you like, BOSS RUSH, BONUS GAMES, FRANK GRIMES
 LIFE), MULTIPLAYER (up to four devices of your local network in one game: one HOSTs a room, the
@@ -88,7 +87,7 @@ board's video and sound follow their behavior and tables), SDL2's (zlib: the win
 controls, inside the games), SDL_GameControllerDB's (zlib: the game controllers' mappings, inside the
 games) and Kenney's (CC0: Kenney Mini, the letters of the window that asks for the ROM set; Input
 Prompts Pixel, the keys and buttons on The Simpsons' CONTROLS page), and arcade-lan's (BSD-3-Clause:
-MULTIPLAYER's rooms and game over the local network, inside The Simpsons).
+MULTIPLAYER's rooms and game over the local network, inside The Simpsons Arcade Game).
 
 No data of the game is in this package: no graphics, sound, music or program byte of the ROM set.
 The Simpsons is a trademark of its owner, and the arcade game is Konami's; this project is not

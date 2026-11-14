@@ -23,8 +23,8 @@
 typedef struct
 {
 	char rom[PORTS_PATH_SIZE];      /* the arcade ROM set: simpsons.zip, or a folder of its files */
-	char build[PORTS_PATH_SIZE];    /* the games' Anbernic build: The Simpsons.sh, The Simpsons Arcade.sh, and in
-	                                   simpsons/ The Simpsons, The Simpsons Arcade, font.bmp and input_prompts.bmp */
+	char build[PORTS_PATH_SIZE];    /* the games' Anbernic build: The Simpsons Arcade Game.sh, The Simpsons Arcade.sh, and in
+	                                   simpsons/ The Simpsons Arcade Game, The Simpsons Arcade, font.bmp and input_prompts.bmp */
 	char out[PORTS_PATH_SIZE];      /* the folder PORTS goes in, with its separator: the card's Roms, or any */
 } ports_inputs;
 

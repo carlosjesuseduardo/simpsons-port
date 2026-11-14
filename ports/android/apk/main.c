@@ -89,7 +89,7 @@ int main(int argc, char **argv)
 				"  --banner  the TV's banner (Android TV, Google TV), a 16:9 PNG or JPEG of yours (by default banner.jpg\n"
 				"            beside it, else the game's)\n"
 				"  --base    the game's Android build (by default android/simpsons-base.apk beside it)\n"
-				"  --out     the APK to write (by default The Simpsons.apk beside it)\n");
+				"  --out     the APK to write (by default The Simpsons Arcade Game.apk beside it)\n");
 			return 2;
 		}
 		snprintf(target, APK_PATH_SIZE, "%s", argv[++at]);

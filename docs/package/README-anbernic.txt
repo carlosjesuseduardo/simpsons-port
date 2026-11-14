@@ -1,13 +1,13 @@
-The Simpsons Arcade and The Simpsons for Anbernic's H700 handhelds
-==================================================================
+The Simpsons Arcade and The Simpsons Arcade Game for Anbernic's H700 handhelds
+==============================================================================
 
-Konami's The Simpsons (1991), the arcade game for four players, as a native game: decompiled to C and
-checked frame by frame against MAME, github.com/cheviman/simpsons-port. The Simpsons Arcade is the arcade
-game as it is; The Simpsons, the console version (menus of its own, no coins: START brings a player in).
-This is the package for the stock firmware of Anbernic's H700 handhelds (RG35XX Plus, RG40XX H and V, RG
-CubeXX and their kin): the games without their assets, ready for the card, and the tool that makes your
-PORTS of them on your computer. Nothing of the game comes in this package: the games take their graphics
-and sounds out of your own ROM set.
+Konami's The Simpsons (1991), the arcade game for four players, as a native game: decompiled to C and checked
+frame by frame against MAME, github.com/cheviman/simpsons-port. The Simpsons Arcade is the arcade game as it
+is; The Simpsons Arcade Game, the console version (menus of its own, no coins: START brings a player in). This
+is the package for the stock firmware of Anbernic's H700 handhelds (RG35XX Plus, RG40XX H and V, RG CubeXX and
+their kin): the games without their assets, ready for the card, and the tool that makes your PORTS of them on
+your computer. Nothing of the game comes in this package: the games take their graphics and sounds out of your
+own ROM set.
 
 What you need
 -------------
@@ -41,7 +41,7 @@ Playing
   d-pad or left stick   move
   A                     attack, pick
   B                     jump, back in the menus
-  START                 START (and pauses The Simpsons)
+  START                 START (and pauses The Simpsons Arcade Game)
   SELECT                a coin, on The Simpsons Arcade (a coin and A bring Marge in)
   MENU                  leaves the game
   volume keys           the game's volume

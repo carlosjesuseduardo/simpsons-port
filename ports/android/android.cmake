@@ -291,7 +291,7 @@ function(simpsons_android_game target program base debug package label)
 endfunction()
 
 simpsons_android_game(simpsons_android simpsons_console_game simpsons The-Simpsons io.github.cheviman.simpsons
-	"The Simpsons")
+	"The Simpsons Arcade Game")
 simpsons_android_game(simpsons_arcade_android ${SIMPSONS_WINDOW_PROGRAM} simpsons-arcade The-Simpsons-Arcade
 	io.github.cheviman.simpsons.arcade "The Simpsons Arcade")
 add_custom_target(simpsons_apks ALL DEPENDS ${SIMPSONS_ANDROID_OUTPUTS})

@@ -1,6 +1,6 @@
 # Name:        anbernic.cmake
 # Description: the build for Anbernic's H700 handhelds (the RG40XX H...) on their stock firmware: The Simpsons and
-#              The Simpsons Arcade, as Roms/PORTS' The Simpsons.sh and The Simpsons Arcade.sh and their folder
+#              The Simpsons Arcade, as Roms/PORTS' The Simpsons Arcade Game.sh and The Simpsons Arcade.sh and their folder
 #              simpsons/
 # Version:     0.1.0
 # Created:     13-11-2026
@@ -56,14 +56,14 @@ function(simpsons_anbernic_game target name program)
 	endforeach()
 endfunction()
 
-simpsons_anbernic_game(simpsons_anbernic "The Simpsons" simpsons_console_game)
+simpsons_anbernic_game(simpsons_anbernic "The Simpsons Arcade Game" simpsons_console_game)
 simpsons_anbernic_game(simpsons_arcade_anbernic "The Simpsons Arcade" ${SIMPSONS_WINDOW_PROGRAM})
 
 # the launchers beside the folder; in it the console's letters and CONTROLS' button pictures (font.bmp,
 # input_prompts.bmp). The assets pack is the handheld's first start's, or Simpsons Anbernic's, made from the player's
 # ROM set with the rest of PORTS
 add_custom_target(simpsons_anbernic_games ALL
-	COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_SOURCE_DIR}/ports/anbernic/The Simpsons.sh"
+	COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_SOURCE_DIR}/ports/anbernic/The Simpsons Arcade Game.sh"
 		"${CMAKE_SOURCE_DIR}/ports/anbernic/The Simpsons Arcade.sh" ${SIMPSONS_ANBERNIC_OUT}
 	COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_SOURCE_DIR}/ports/sdl2/font/font.bmp
 		${CMAKE_SOURCE_DIR}/ports/sdl2/prompts/input_prompts.bmp ${SIMPSONS_ANBERNIC_OUT}/simpsons

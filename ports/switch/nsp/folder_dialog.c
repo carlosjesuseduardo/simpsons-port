@@ -21,7 +21,7 @@
 #include <string.h>
 
 #ifndef FOLDER_TITLE
-#define FOLDER_TITLE "The folder for The Simpsons.nsp"
+#define FOLDER_TITLE "The folder for The Simpsons Arcade Game.nsp"
 #endif
 
 #ifdef _WIN32

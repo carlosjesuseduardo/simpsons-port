@@ -14,7 +14,7 @@
 # menu (SIMPSONS_SYSTEM_EXIT: HOME leaves it). A game reads the assets pack (simpsons.assets) from its own romfs,
 # which a computer fills with the player's (the .nsp, made there with the player's keys by Simpsons NSP; or, where
 # this build has the pack beside the executables, SIMPSONS_BIN_DIR/simpsons.assets, the .nro: the player's own,
-# never shared); with none there, from sdmc:/switch/simpsons/, where it takes the assets out of the player's
+# never shared); with none there, from sdmc:/switch/simpsons-arcade/, where it takes the assets out of the player's
 # simpsons.zip at its first start (main.c's device_assets: the release's .nro carries none). Each game its own
 # title, in homebrew's range (0x05...), apart from the other ports' (tmnt-port's 0500544d4e540000 and
 # 0500544d4e541000, outrunners-port's 05005e6a4f520000, segasonic-port's 05005e6a50510000): "SIMP" in ASCII, then
@@ -25,7 +25,7 @@
 #       -DCMAKE_DEPENDS_USE_COMPILER=FALSE [-DSIMPSONS_BIN_DIR=...]
 #   cmake --build build/switch --target simpsons_switch_games --parallel 16
 
-set(SIMPSONS_SWITCH_TITLE_ID 050053494d500000)           # The Simpsons
+set(SIMPSONS_SWITCH_TITLE_ID 050053494d500000)           # The Simpsons Arcade Game
 set(SIMPSONS_ARCADE_SWITCH_TITLE_ID 050053494d510000)    # The Simpsons Arcade
 
 target_compile_definitions(simpsons_console_program PUBLIC SIMPSONS_HANDHELD SIMPSONS_SCREEN_WIDE
@@ -112,7 +112,7 @@ function(simpsons_switch_game target name folder title_id program)
 	set(SIMPSONS_SWITCH_OUTPUTS ${SIMPSONS_SWITCH_OUTPUTS} ${outputs} PARENT_SCOPE)
 endfunction()
 
-simpsons_switch_game(simpsons_switch "The Simpsons" simpsons ${SIMPSONS_SWITCH_TITLE_ID} simpsons_console_game)
+simpsons_switch_game(simpsons_switch "The Simpsons Arcade Game" simpsons ${SIMPSONS_SWITCH_TITLE_ID} simpsons_console_game)
 simpsons_switch_game(simpsons_arcade_switch "The Simpsons Arcade" simpsons-arcade ${SIMPSONS_ARCADE_SWITCH_TITLE_ID}
 	${SIMPSONS_WINDOW_PROGRAM})
 if(NOT EXISTS ${SIMPSONS_SWITCH_PACK})

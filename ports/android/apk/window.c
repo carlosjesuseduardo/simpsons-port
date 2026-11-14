@@ -220,7 +220,7 @@ static void refresh(void)
 }
 
 /* What making the APK failed on, as the window shows it: a path the player gave as it is; one of the
-   defaults' by where it is ("The Simpsons.apk.assets, beside this tool"), the signing key's too */
+   defaults' by where it is ("The Simpsons Arcade Game.apk.assets, beside this tool"), the signing key's too */
 static void place_failure(void)
 {
 	const char *const detail = tool.outcome.detail;
@@ -382,14 +382,14 @@ static void draw(void)
 		y += ROW_HEIGHT;
 	}
 	draw_button(FOLDER_BUTTON, tool.no_dialog ? "No folder dialog on this system" : "Choose the output folder");
-	draw_button(MAKE_BUTTON, tool.phase == MAKING ? "Making " APK_FILE "..." : "Make " APK_FILE);
+	draw_button(MAKE_BUTTON, tool.phase == MAKING ? "Making the .apk files..." : "Make the .apk files");
 
 	/* below the buttons: what it is doing, what it made or what failed */
 	if (tool.phase == MAKING)
 	{
 		const char *const step = (const char *)SDL_AtomicGetPtr(&tool.step);
 
-		snprintf(line, sizeof(line), "Making " APK_FILE ": %s", step ? step : "starting");
+		snprintf(line, sizeof(line), "Making the .apk files: %s", step ? step : "starting");
 		first = line;
 		colour = yellow;
 	}
@@ -415,7 +415,7 @@ static void draw(void)
 	else
 	{
 		first = "Drop simpsons.zip, " APK_BASE_FILE " or a square PNG or JPEG on this window";
-		second = "Enter makes " APK_FILE;
+		second = "Enter makes the .apk files";
 	}
 	letters_draw(tool.renderer, &tool.font, first, STATUS_TOP, 1, colour, WINDOW_WIDTH);
 	if (tool.phase == MAKING)
@@ -459,7 +459,7 @@ static void start_making(void)
 	tool.phase = MAKING;
 	if (!(tool.thread = SDL_CreateThread(making_thread, "Simpsons APK", NULL)))
 	{
-		snprintf(tool.outcome.what, sizeof(tool.outcome.what), "Making " APK_FILE " cannot start");
+		snprintf(tool.outcome.what, sizeof(tool.outcome.what), "Making the .apk files cannot start");
 		tool.phase = FAILED;
 	}
 }

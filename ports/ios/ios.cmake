@@ -26,7 +26,7 @@
 #       -DCMAKE_OSX_DEPLOYMENT_TARGET=13.0 -DSIMPSONS_REFERENCE_TOOLS=OFF [-DCMAKE_OSX_SYSROOT=iphonesimulator]
 #       [-DSIMPSONS_BIN_DIR=build/bin-ios] [-DSIMPSONS_IOS_TEAM=<team ID>]
 #   cmake --build build/ios --config Release --target simpsons_ios_games -- CODE_SIGNING_ALLOWED=NO
-# The apps: SIMPSONS_BIN_DIR/ios/The Simpsons.app and The Simpsons Arcade.app; for a device, also The Simpsons.ipa and
+# The apps: SIMPSONS_BIN_DIR/ios/The Simpsons Arcade Game.app and The Simpsons Arcade.app; for a device, also The Simpsons Arcade Game.ipa and
 # The Simpsons Arcade.ipa there (each app inside Payload/, zipped).
 
 if(NOT CMAKE_GENERATOR STREQUAL "Xcode")
@@ -114,7 +114,7 @@ function(simpsons_ios_game target name identifier program)
 	set(SIMPSONS_IOS_OUTPUTS ${SIMPSONS_IOS_OUTPUTS} ${outputs} PARENT_SCOPE)
 endfunction()
 
-simpsons_ios_game(simpsons_ios "The Simpsons" io.github.cheviman.simpsons simpsons_console_game)
+simpsons_ios_game(simpsons_ios "The Simpsons Arcade Game" io.github.cheviman.simpsons simpsons_console_game)
 simpsons_ios_game(simpsons_arcade_ios "The Simpsons Arcade" io.github.cheviman.simpsons.arcade ${SIMPSONS_WINDOW_PROGRAM})
 add_custom_target(simpsons_ios_games ALL DEPENDS ${SIMPSONS_IOS_OUTPUTS})
 add_dependencies(simpsons_ios_games simpsons_ios simpsons_arcade_ios)

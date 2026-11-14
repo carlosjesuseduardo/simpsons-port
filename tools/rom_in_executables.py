@@ -33,7 +33,7 @@ rom = game_profile.rom
 SPAN = 32
 EXTENSION = ".exe" if sys.platform == "win32" else ""
 GAME = [name + EXTENSION for name in ("simpsons_game_headless", "simpsons_headless", "The Simpsons Arcade",
-                                        "The Simpsons")]
+                                        "The Simpsons Arcade Game")]
 
 
 def repeating_runs(chunk, period):

@@ -17,7 +17,7 @@
 #include <stdio.h>
 
 #define APK_PATH_SIZE    1100
-#define APK_FILE         "The Simpsons.apk"
+#define APK_FILE         "The Simpsons Arcade Game.apk"
 #define APK_OWN_ICON     "icon.jpg"         /* the player's own icon, taken when it is beside the tool */
 #define APK_OWN_BANNER   "banner.jpg"       /* the player's own TV banner, taken when it is beside the tool */
 #define APK_BASE_FOLDER  "android"
@@ -56,7 +56,7 @@ typedef void (*apk_step)(void *context, const char *step);
 void apk_take_dropped(apk_inputs *inputs, const char *path);
 
 /* The inputs not given, beside the tool (in the folder 'here', with its separator): simpsons.zip,
-   android/simpsons-base.apk, The Simpsons.apk, and the player's icon.jpg and banner.jpg when they are there (else the
+   android/simpsons-base.apk, The Simpsons Arcade Game.apk, and the player's icon.jpg and banner.jpg when they are there (else the
    game's own) */
 void apk_defaults(apk_inputs *inputs, const char *here);
 

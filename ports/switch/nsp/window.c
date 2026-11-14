@@ -188,7 +188,7 @@ static void refresh(void)
 		nsp_file_exists(path) ? NULL : "not found", "found");
 	nsp_folder_of(inputs->out, path, sizeof(path));
 	set_row(&tool.rows[4], "Output folder", tool.given.out[0] ? path : BESIDE_TOOL,
-		nsp_folder_exists(path) ? NULL : "not found", "The Simpsons.nsp goes here");
+		nsp_folder_exists(path) ? NULL : "not found", "The Simpsons Arcade Game.nsp goes here");
 }
 
 /* ---- drawing ---- */
@@ -330,20 +330,20 @@ static void draw(void)
 		y += ROW_HEIGHT;
 	}
 	draw_button(FOLDER_BUTTON, tool.no_dialog ? "No folder dialog on this system" : "Choose the output folder");
-	draw_button(MAKE_BUTTON, tool.phase == MAKING ? "Making The Simpsons.nsp..." : "Make The Simpsons.nsp");
+	draw_button(MAKE_BUTTON, tool.phase == MAKING ? "Making the .nsp files..." : "Make the .nsp files");
 
 	/* below the buttons: what it is doing, what it made or what failed */
 	if (tool.phase == MAKING)
 	{
 		const char *const step = (const char *)SDL_AtomicGetPtr(&tool.step);
 
-		snprintf(line, sizeof(line), "Making The Simpsons.nsp: %s", step ? step : "starting");
+		snprintf(line, sizeof(line), "Making the .nsp files: %s", step ? step : "starting");
 		first = line;
 		colour = yellow;
 	}
 	else if (tool.phase == MADE)
 	{
-		snprintf(line, sizeof(line), "The Simpsons.nsp and The Simpsons Arcade.nsp are written: %.1f MB",
+		snprintf(line, sizeof(line), "The Simpsons Arcade Game.nsp and The Simpsons Arcade.nsp are written: %.1f MB",
 			(double)tool.outcome.size / (1024.0 * 1024.0));
 		first = line;
 		second = tool.made_place;
@@ -363,7 +363,7 @@ static void draw(void)
 	else
 	{
 		first = "Drop prod.keys, simpsons.zip or a 256 x 256 JPEG on this window";
-		second = "Enter makes The Simpsons.nsp";
+		second = "Enter makes the .nsp files";
 	}
 	letters_draw(tool.renderer, &tool.font, first, STATUS_TOP, 1, colour, WINDOW_WIDTH);
 	if (tool.phase == MAKING)
@@ -406,7 +406,7 @@ static void start_making(void)
 	tool.phase = MAKING;
 	if (!(tool.thread = SDL_CreateThread(making_thread, "Simpsons NSP", NULL)))
 	{
-		snprintf(tool.outcome.what, sizeof(tool.outcome.what), "Making The Simpsons.nsp cannot start");
+		snprintf(tool.outcome.what, sizeof(tool.outcome.what), "Making the .nsp files cannot start");
 		tool.phase = FAILED;
 	}
 }
@@ -421,7 +421,7 @@ static void end_making(void)
 
 static void choose_folder(void)
 {
-	char start[NSP_PATH_SIZE], chosen[NSP_PATH_SIZE - sizeof(NSP_FILE) - 1];    /* (room for The Simpsons.nsp after it) */
+	char start[NSP_PATH_SIZE], chosen[NSP_PATH_SIZE - sizeof(NSP_FILE) - 1];    /* (room for The Simpsons Arcade Game.nsp after it) */
 	int got;
 
 	nsp_folder_of(tool.inputs.out, start, sizeof(start));
