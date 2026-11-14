@@ -1,13 +1,13 @@
-The Simpsons Arcade and The Simpsons Arcade Game for Anbernic's H700 handhelds
-==============================================================================
+The Simpsons Arcade Game and The Simpsons Mr. Plow Edition for Anbernic's H700 handhelds
+========================================================================================
 
 Konami's The Simpsons (1991), the arcade game for four players, as a native game: decompiled to C and checked
-frame by frame against MAME, github.com/cheviman/simpsons-port. The Simpsons Arcade is the arcade game as it
-is; The Simpsons Arcade Game, the console version (menus of its own, no coins: START brings a player in). This
-is the package for the stock firmware of Anbernic's H700 handhelds (RG35XX Plus, RG40XX H and V, RG CubeXX and
-their kin): the games without their assets, ready for the card, and the tool that makes your PORTS of them on
-your computer. Nothing of the game comes in this package: the games take their graphics and sounds out of your
-own ROM set.
+frame by frame against MAME, github.com/cheviman/simpsons-port. The Simpsons Arcade Game is the arcade game as
+it is; The Simpsons Mr. Plow Edition, the console version (menus of its own, no coins: START brings a player
+in). This is the package for the stock firmware of Anbernic's H700 handhelds (RG35XX Plus, RG40XX H and V, RG
+CubeXX and their kin): the games without their assets, ready for the card, and the tool that makes your PORTS
+of them on your computer. Nothing of the game comes in this package: the games take their graphics and sounds
+out of your own ROM set.
 
 What you need
 -------------
@@ -15,12 +15,12 @@ What you need
 
 Straight to the card
 --------------------
-The folder anbernic is the card's Roms/PORTS as it is: copy what is in it into Roms/PORTS/ (The
-Simpsons.sh, The Simpsons Arcade.sh and the folder simpsons; the other ports there stay as they are) and put
-simpsons.zip in Roms/PORTS/simpsons/. The Simpsons and The Simpsons Arcade are then in the firmware's PORTS.
-The first start takes the assets out of simpsons.zip into one file, Roms/PORTS/simpsons/simpsons.assets
-(some seconds, the screen black); both games start from it from then on. Without simpsons.zip the game
-says where to put it (in simpsons/simpsons.log, or simpsons-arcade.log).
+The folder anbernic is the card's Roms/PORTS as it is: copy what is in it into Roms/PORTS/ (The Simpsons.sh,
+The Simpsons Arcade Game.sh and the folder simpsons; the other ports there stay as they are) and put
+simpsons.zip in Roms/PORTS/simpsons/. The Simpsons and The Simpsons Arcade Game are then in the firmware's
+PORTS. The first start takes the assets out of simpsons.zip into one file, Roms/PORTS/simpsons/simpsons.assets
+(some seconds, the screen black); both games start from it from then on. Without simpsons.zip the game says
+where to put it (in simpsons/simpsons.log, or simpsons-arcade.log).
 
 With the tool
 -------------
@@ -41,8 +41,8 @@ Playing
   d-pad or left stick   move
   A                     attack, pick
   B                     jump, back in the menus
-  START                 START (and pauses The Simpsons Arcade Game)
-  SELECT                a coin, on The Simpsons Arcade (a coin and A bring Marge in)
+  START                 START (and pauses The Simpsons Mr. Plow Edition)
+  SELECT                a coin, on The Simpsons Arcade Game (a coin and A bring Marge in)
   MENU                  leaves the game
   volume keys           the game's volume
 The games keep their settings and their logs (simpsons.log, simpsons-arcade.log) in Roms/PORTS/simpsons/.

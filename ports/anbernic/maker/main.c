@@ -78,7 +78,7 @@ int main(int argc, char **argv)
 		{
 			fprintf(stderr, "Usage: Simpsons Anbernic [--rom FILE] [--anbernic FOLDER] [--out FOLDER]\n"
 				"  --rom       the arcade ROM set (simpsons.zip, MAME's, 4 Players World; by default beside it)\n"
-				"  --anbernic  the games' Anbernic build: The Simpsons Arcade Game.sh, The Simpsons Arcade.sh and the folder\n"
+				"  --anbernic  the games' Anbernic build: The Simpsons Mr. Plow Edition.sh, The Simpsons Arcade Game.sh and the folder\n"
 				"              simpsons (by default anbernic beside it)\n"
 				"  --out       the folder PORTS goes in: your card's Roms, or any (by default beside it)\n");
 			return 2;

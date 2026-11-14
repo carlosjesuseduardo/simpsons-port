@@ -56,7 +56,7 @@ KITS = [
 ]
 
 # the programs in the devices' folders (Anbernic's executables and launchers)
-DEVICE_PROGRAMS = ("The Simpsons Arcade Game", "The Simpsons Arcade", "The Simpsons Arcade Game.sh", "The Simpsons Arcade.sh")
+DEVICE_PROGRAMS = ("The Simpsons Mr. Plow Edition", "The Simpsons Arcade Game", "The Simpsons Mr. Plow Edition.sh", "The Simpsons Arcade Game.sh")
 
 PROGRAM = 0o755
 FILE = 0o644
@@ -160,8 +160,8 @@ def pack_ios(ipas, kits, out):
     top = "simpsons-ios"
     target = os.path.join(out, top + ".zip")
     found = sorted(name for name in os.listdir(need(ipas)) if name.endswith(".ipa"))
-    if found != ["The Simpsons Arcade Game.ipa", "The Simpsons Arcade.ipa"]:
-        sys.exit("pack_devices: %s has %s, not The Simpsons Arcade Game.ipa and The Simpsons Arcade.ipa" % (ipas, found))
+    if found != ["The Simpsons Arcade Game.ipa", "The Simpsons Mr. Plow Edition.ipa"]:
+        sys.exit("pack_devices: %s has %s, not The Simpsons Mr. Plow Edition.ipa and The Simpsons Arcade Game.ipa" % (ipas, found))
     with zipfile.ZipFile(target, "w") as archive:
         add_readme(archive, need(os.path.join(DOCS, "README-ios.txt")), top + "/README.txt", set())
         shared_files(archive, top, kits)
@@ -175,13 +175,13 @@ def main():
     parser.add_argument("--switch", required=True,
                         help="the Switch's games: simpsons/ and simpsons-arcade/, the .nsp's pieces")
     parser.add_argument("--switch-nro", required=True,
-                        help="the Switch's .nro without assets: The Simpsons Arcade Game.nro, The Simpsons Arcade.nro")
+                        help="the Switch's .nro without assets: The Simpsons Mr. Plow Edition.nro, The Simpsons Arcade Game.nro")
     parser.add_argument("--android", required=True,
                         help="Android's games: simpsons-base.apk, simpsons-arcade-base.apk")
     parser.add_argument("--android-ready", help="Android's APKs signed with the project's key (none: not in it)")
     parser.add_argument("--anbernic", required=True,
-                        help="Anbernic's games: The Simpsons Arcade Game.sh, The Simpsons Arcade.sh and simpsons/")
-    parser.add_argument("--ios", help="iOS's games: The Simpsons Arcade Game.ipa, The Simpsons Arcade.ipa (none: no iOS package)")
+                        help="Anbernic's games: The Simpsons Mr. Plow Edition.sh, The Simpsons Arcade Game.sh and simpsons/")
+    parser.add_argument("--ios", help="iOS's games: The Simpsons Mr. Plow Edition.ipa, The Simpsons Arcade Game.ipa (none: no iOS package)")
     parser.add_argument("--out", required=True, help="where the zips go")
     arguments = parser.parse_args()
     os.makedirs(arguments.out, exist_ok=True)

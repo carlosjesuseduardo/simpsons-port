@@ -56,7 +56,7 @@ The Simpsons adds `--actions FILE` (the menus' and the players' presses by frame
 ## The console version's checks
 
 Every change to The Simpsons is seen in its frames (`--actions`, `--video-dump`, contact sheets) and The Simpsons
-Arcade stays identical to the reference in its 25 scenarios. The console replaces a few of the game's functions
+Arcade Game stays identical to the reference in its 25 scenarios. The console replaces a few of the game's functions
 (`console/replaced.txt`): `tools/decompile.py` writes them as `CONSOLE_ORIGINAL(name)`, the original kept as
 `original_name` in the console's build and the game's own everywhere else. Bart's shirt and the players' boxes in
 WIDE are drawn by the port's side of the video (nothing unless the console asks), so the game's state is the

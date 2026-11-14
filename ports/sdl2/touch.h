@@ -1,7 +1,7 @@
 /**
  *    Name:        touch.h
  *    Description: the touch screen's controls (Android): a stick where the left thumb lands, ATTACK and JUMP at the
- *                 right, START (The Simpsons) or COIN (The Simpsons Arcade) over them, drawn over the picture, and
+ *                 right, START (The Simpsons) or COIN (The Simpsons Arcade Game) over them, drawn over the picture, and
  *                 the controls the fingers on them hold: player 1's
  *    Version:     0.1.0
  *    Created:     13-11-2026
@@ -27,7 +27,7 @@ void touch_open(SDL_Renderer *renderer, const char *base);
 void touch_event(const SDL_Event *event);
 
 /* The board's controls the fingers hold (SIMPSONS_LEFT ... SIMPSONS_JUMP), and whether one holds START (COIN in The
-   Simpsons Arcade) */
+   Simpsons Arcade Game) */
 uint8_t touch_controls(void);
 bool touch_start(void);
 

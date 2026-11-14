@@ -600,3 +600,8 @@ only by that port's CI.
   folder, the Android and iOS identifiers, the Switch's title ids. The makers' buttons say "Make the .nsp files" and
   "Make the .apk files" (the new name is 304 pixels in their letters, the buttons 300). Checked: the Windows games and
   the three makers built (MSVC), the Switch's two .nro (devkitPro), rom_in_executables none in the games.
+- **14-11-2026, the names again** (Sebas: "que sea la de consola mr plow edition", Mr. Plow being Don Barredora; "The
+  Simpsons Arcade" beside "The Simpsons Arcade Game" said arcade twice): the console version is The Simpsons Mr. Plow
+  Edition and the board's as it is The Simpsons Arcade Game, in every build and package as above; the identifiers, the
+  folder of what the games keep and the Switch's folder simpsons-arcade as they were. Checked as above: the Windows
+  games and the makers, the Switch's two .nro, rom_in_executables none.

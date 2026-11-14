@@ -10,7 +10,7 @@
  *    license:BSD-3-Clause
  *    The console version (The Simpsons) runs the arcade game's program with these in place of the game's own (whose
  *    definitions tools/decompile.py writes as CONSOLE_ORIGINAL(name): original_name here, for these to call), so the
- *    arcade build (The Simpsons Arcade) stays the program it is. In the attract mode the console's front end runs
+ *    arcade build (The Simpsons Arcade Game) stays the program it is. In the attract mode the console's front end runs
  *    (attract): the Konami presentation at power-on (presentation.c), then the menus on the TV (tv.c, menu.c); ARCADE
  *    starts the game, whose start shows its portraits, where each player chooses his character (characters.c). As
  *    tmnt-port's console.c.

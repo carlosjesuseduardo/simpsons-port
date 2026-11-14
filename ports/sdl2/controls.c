@@ -9,7 +9,7 @@
  *
  *    license:BSD-3-Clause
  *    As tmnt-port's (and outrunners-port's), for the cabinet's four players: the defaults below; controls.ini, in the
- *    folder of what the game keeps, keeps what The Simpsons' CONTROLS page changes, and The Simpsons Arcade reads it
+ *    folder of what the game keeps, keeps what The Simpsons' CONTROLS page changes, and The Simpsons Arcade Game reads it
  *    too (its players' moves, ATTACK, JUMP and START): a section a player, "[player 1]", and a line a control,
  *    "attack = Z, Left Ctrl | a" (SDL's names of the keys, then of the buttons and the triggers). A player's game
  *    controller is the one plugged in in their turn; its left stick moves besides (the window port).
@@ -229,7 +229,7 @@ void controls_save(void)
 		return;
 	fputs("; The Simpsons' controls, a section a player: a control a line, its keys (SDL's names), then after | its\n"
 		"; game controller buttons and triggers. OPTIONS > CONTROLS writes this file; it can be changed by hand too.\n"
-		"; The Simpsons Arcade reads it as well (its coins are 5 to 8 and a game controller's Back, F2 the test\n"
+		"; The Simpsons Arcade Game reads it as well (its coins are 5 to 8 and a game controller's Back, F2 the test\n"
 		"; switch).\n", file);
 	fprintf(file, "version = %d\n", FILE_VERSION);
 	for (int player = 0; player < CONTROL_PLAYERS; player++)

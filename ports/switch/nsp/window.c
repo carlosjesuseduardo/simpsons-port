@@ -188,7 +188,7 @@ static void refresh(void)
 		nsp_file_exists(path) ? NULL : "not found", "found");
 	nsp_folder_of(inputs->out, path, sizeof(path));
 	set_row(&tool.rows[4], "Output folder", tool.given.out[0] ? path : BESIDE_TOOL,
-		nsp_folder_exists(path) ? NULL : "not found", "The Simpsons Arcade Game.nsp goes here");
+		nsp_folder_exists(path) ? NULL : "not found", "The Simpsons Mr. Plow Edition.nsp goes here");
 }
 
 /* ---- drawing ---- */
@@ -343,7 +343,7 @@ static void draw(void)
 	}
 	else if (tool.phase == MADE)
 	{
-		snprintf(line, sizeof(line), "The Simpsons Arcade Game.nsp and The Simpsons Arcade.nsp are written: %.1f MB",
+		snprintf(line, sizeof(line), "The Simpsons Mr. Plow Edition.nsp and The Simpsons Arcade Game.nsp are written: %.1f MB",
 			(double)tool.outcome.size / (1024.0 * 1024.0));
 		first = line;
 		second = tool.made_place;
@@ -421,7 +421,7 @@ static void end_making(void)
 
 static void choose_folder(void)
 {
-	char start[NSP_PATH_SIZE], chosen[NSP_PATH_SIZE - sizeof(NSP_FILE) - 1];    /* (room for The Simpsons Arcade Game.nsp after it) */
+	char start[NSP_PATH_SIZE], chosen[NSP_PATH_SIZE - sizeof(NSP_FILE) - 1];    /* (room for The Simpsons Mr. Plow Edition.nsp after it) */
 	int got;
 
 	nsp_folder_of(tool.inputs.out, start, sizeof(start));

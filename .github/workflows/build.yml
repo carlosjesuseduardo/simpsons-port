@@ -1,9 +1,9 @@
 # Name:        build.yml
 # Description: builds the games on clean machines with no ROM set (Windows with MSVC, Linux, macOS for Apple silicon
 #              and Intel), SDL2 and the C runtime inside the executables, and packs what a player runs: the
-#              computers' packages, The Simpsons Arcade and The Simpsons (the console version) alone, which make
+#              computers' packages, The Simpsons Arcade Game and The Simpsons (the console version) alone, which make
 #              their assets pack out of the player's ROM set on their first run, with their README and the licenses
-#              (on macOS The Simpsons Arcade in a package of its own); and a package for each device (as
+#              (on macOS The Simpsons Arcade Game in a package of its own); and a package for each device (as
 #              tmnt-port's: the job devices, ports/pack_devices.py), its games without assets beside the tool that
 #              makes the player's of them for Windows, macOS and Linux (Simpsons NSP, Simpsons APK, Simpsons
 #              Anbernic, from the computers' kits): the Switch's .nsp pieces (its job, devkitPro's image) and its
@@ -85,7 +85,7 @@ jobs:
         run: cmake --build build/cmake --config Release --parallel
 
       # what a player runs (no headless runs, no build leftovers, no devices' tools), as the build packs it locally
-      # on Windows (simpsons_package, CMakeLists.txt): the folder simpsons with The Simpsons Arcade and The Simpsons Arcade Game
+      # on Windows (simpsons_package, CMakeLists.txt): the folder simpsons with The Simpsons Arcade Game and The Simpsons Mr. Plow Edition
       # (the .apps on macOS, signed ad hoc: with no certificate macOS offers to open them anyway, where a bundle
       # signed in part is "damaged"), their pictures beside them on Linux, the package's README.txt, the project's
       # LICENSE.txt and licenses/ (MAME's and ymfm's: the board's video and sound follow their behavior and tables;
@@ -130,10 +130,10 @@ jobs:
               codesign --verify --deep --strict --verbose=2 "$app"
               lipo -info "$app/Contents/MacOS/$(basename "$app" .app)"
             done
-            # The Simpsons Arcade in a package of its own, with the README and the licenses: a launcher that installs
+            # The Simpsons Arcade Game in a package of its own, with the README and the licenses: a launcher that installs
             # a release's macOS package takes its first .app and leaves the other out (tmnt-port's issue 7)
             mkdir -p dist/simpsons-arcade
-            mv "dist/simpsons/The Simpsons Arcade.app" dist/simpsons-arcade/
+            mv "dist/simpsons/The Simpsons Arcade Game.app" dist/simpsons-arcade/
             cp -R dist/simpsons/licenses dist/simpsons/LICENSE.txt dist/simpsons/README.txt dist/simpsons-arcade/
             ls -la dist/simpsons-arcade
           fi
@@ -177,7 +177,7 @@ jobs:
             dist/simpsons-arcade-${{ matrix.name }}.*
             dist/simpsons-${{ matrix.name }}-kit.tar.gz
 
-  # The Nintendo Switch: The Simpsons' and The Simpsons Arcade's .nsp pieces (main, main.npdm, control.nacp, icon.jpg
+  # The Nintendo Switch: The Simpsons' and The Simpsons Arcade Game's .nsp pieces (main, main.npdm, control.nacp, icon.jpg
   # each: build/bin/switch/simpsons and simpsons-arcade), with devkitPro's toolchain in its own image, and their .nro
   # without an assets pack (build/bin/switch-nro), which take the assets out of the player's simpsons.zip in
   # sdmc:/switch/simpsons-arcade/ at their first start. The HOME menu's icon is the repository's (ports/switch/icon.jpg)
@@ -206,7 +206,7 @@ jobs:
           name: simpsons-switch-nro
           path: build/bin/switch-nro/*.nro
 
-  # Android: The Simpsons' and The Simpsons Arcade's base APKs, without an assets pack or a signature
+  # Android: The Simpsons' and The Simpsons Arcade Game's base APKs, without an assets pack or a signature
   # (build/bin/android/*-base.apk; arm64-v8a and armeabi-v7a in each), with the NDK and the SDK's tools of the
   # runner's Android SDK and its Java 17 (ports/android/android.cmake; the icons and the TV banner the repository's,
   # ports/android/res); and the same signed with the project's key, the same at every release so that a new one
@@ -260,13 +260,13 @@ jobs:
           ready=build/bin/android-ready
           mkdir -p $ready
           "$apksigner" sign --ks "$RUNNER_TEMP/release.keystore" --ks-pass env:KEYSTORE_PASSWORD \
-            --ks-key-alias simpsons --key-pass env:KEYSTORE_PASSWORD --out "$ready/The Simpsons Arcade Game.apk" \
+            --ks-key-alias simpsons --key-pass env:KEYSTORE_PASSWORD --out "$ready/The Simpsons Mr. Plow Edition.apk" \
             build/bin/android/simpsons-base.apk
           "$apksigner" sign --ks "$RUNNER_TEMP/release.keystore" --ks-pass env:KEYSTORE_PASSWORD \
-            --ks-key-alias simpsons --key-pass env:KEYSTORE_PASSWORD --out "$ready/The Simpsons Arcade.apk" \
+            --ks-key-alias simpsons --key-pass env:KEYSTORE_PASSWORD --out "$ready/The Simpsons Arcade Game.apk" \
             build/bin/android/simpsons-arcade-base.apk
           rm -f "$RUNNER_TEMP/release.keystore" $ready/*.idsig
-          "$apksigner" verify --verbose "$ready/The Simpsons Arcade Game.apk" "$ready/The Simpsons Arcade.apk"
+          "$apksigner" verify --verbose "$ready/The Simpsons Mr. Plow Edition.apk" "$ready/The Simpsons Arcade Game.apk"
 
       - uses: actions/upload-artifact@v7
         with:
@@ -308,7 +308,7 @@ jobs:
           name: simpsons-anbernic
           path: build/bin/anbernic/
 
-  # iOS and iPadOS: The Simpsons' and The Simpsons Arcade's apps for an iPhone or an iPad (arm64), with Xcode through
+  # iOS and iPadOS: The Simpsons' and The Simpsons Arcade Game's apps for an iPhone or an iPad (arm64), with Xcode through
   # CMake's Xcode generator and SDL2 from its source (ports/ios/ios.cmake; the icon the repository's, Homer at the
   # window), not signed (no key nor team: the player's sideloading tool signs them), each an .ipa with no assets
   # (build/bin/ios), which takes the assets out of the player's simpsons.zip in its Documents folder at its first start.
@@ -333,7 +333,7 @@ jobs:
 
       - name: Check
         run: |
-          for game in "The Simpsons Arcade Game" "The Simpsons Arcade"; do
+          for game in "The Simpsons Mr. Plow Edition" "The Simpsons Arcade Game"; do
             app="build/bin/ios/$game.app"
             plist="$app/Info.plist"
             plutil -lint "$plist"
@@ -354,8 +354,8 @@ jobs:
             unzip -l "build/bin/ios/$game.ipa" | grep -q "Payload/$game.app/$game\$" || { echo "$game.ipa: no app"; exit 1; }
             if unzip -l "build/bin/ios/$game.ipa" | grep -E '\.assets$|\.zip$'; then echo "$game.ipa: assets in it"; exit 1; fi
           done
-          plutil -extract CFBundleIdentifier raw -o - "build/bin/ios/The Simpsons Arcade Game.app/Info.plist" | grep -qx io.github.cheviman.simpsons
-          plutil -extract CFBundleIdentifier raw -o - "build/bin/ios/The Simpsons Arcade.app/Info.plist" | grep -qx io.github.cheviman.simpsons.arcade
+          plutil -extract CFBundleIdentifier raw -o - "build/bin/ios/The Simpsons Mr. Plow Edition.app/Info.plist" | grep -qx io.github.cheviman.simpsons
+          plutil -extract CFBundleIdentifier raw -o - "build/bin/ios/The Simpsons Arcade Game.app/Info.plist" | grep -qx io.github.cheviman.simpsons.arcade
 
       - uses: actions/upload-artifact@v7
         with:
@@ -394,8 +394,8 @@ jobs:
           xcrun simctl boot "$device"
           xcrun simctl bootstatus "$device" -b
           mkdir -p screens
-          for game in "The Simpsons Arcade:io.github.cheviman.simpsons.arcade:simpsons-arcade" \
-            "The Simpsons Arcade Game:io.github.cheviman.simpsons:simpsons"; do
+          for game in "The Simpsons Arcade Game:io.github.cheviman.simpsons.arcade:simpsons-arcade" \
+            "The Simpsons Mr. Plow Edition:io.github.cheviman.simpsons:simpsons"; do
             IFS=: read -r name identifier log <<< "$game"
             xcrun simctl install "$device" "build/bin-ios-simulator/ios/$name.app"
             xcrun simctl launch "$device" "$identifier"
@@ -546,7 +546,7 @@ jobs:
         run: |
           ls -la dist
           version=$(sed -n 's/^project(simpsons VERSION \([0-9.]*\).*/\1/p' CMakeLists.txt)$SIMPSONS_VERSION_SUFFIX
-          { cat docs/releases/testing.md; echo; echo "This one: V$version in The Simpsons Arcade Game's OPTIONS, from $GITHUB_SHA."; } > notes.md
+          { cat docs/releases/testing.md; echo; echo "This one: V$version in The Simpsons Mr. Plow Edition's OPTIONS, from $GITHUB_SHA."; } > notes.md
           gh release delete testing-build --cleanup-tag --yes || true
           gh release create testing-build --prerelease --latest=false --target "$GITHUB_SHA" \
             --title "The Simpsons testing (V$version)" --notes-file notes.md \

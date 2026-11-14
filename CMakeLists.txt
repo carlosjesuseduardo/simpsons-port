@@ -258,7 +258,7 @@ if(SIMPSONS_DECOMPILED AND SIMPSONS_CONSOLE_SOURCES)
 	add_library(simpsons_console_game STATIC runtime/src/game.c)
 	target_link_libraries(simpsons_console_game PUBLIC simpsons_console_program simpsons_video simpsons_sound
 		simpsons_assets)
-	# (its pack's version: the same layout and the same src/table.c as The Simpsons Arcade's, so the same pack)
+	# (its pack's version: the same layout and the same src/table.c as The Simpsons Arcade Game's, so the same pack)
 	simpsons_add_assets_pack(simpsons_assets_pack_console simpsons_console_program)
 	target_link_libraries(simpsons_console_game PUBLIC simpsons_assets_pack_console)
 	# MULTIPLAYER, the LAN game (console/PLAN.md, 11): arcade-lan, a repository of its own (lan/, or ARCADE_LAN_DIR
@@ -305,7 +305,7 @@ if(SIMPSONS_WINDOW_PROGRAM AND NOT SIMPSONS_SWITCH AND NOT SIMPSONS_ANBERNIC)
 	target_compile_definitions(simpsons_controller_db INTERFACE SIMPSONS_CONTROLLER_DB)
 endif()
 
-# The games in a window (ports/sdl2): The Simpsons Arcade, the decompiled program where src/ has it
+# The games in a window (ports/sdl2): The Simpsons Arcade Game, the decompiled program where src/ has it
 # (SIMPSONS_WINDOW_PROGRAM), else the translation scaffold; and The Simpsons, the console version. SDL2 from the
 # system, or on Windows the development package unpacked in build/downloads/sdl2, its library beside the executables;
 # or, with SIMPSONS_STATIC_SDL2, SDL2 built from its own source into them. On a device, the device's own build
@@ -442,19 +442,19 @@ if(SIMPSONS_WINDOW_PROGRAM AND NOT SIMPSONS_DEVICE)
 			endif()
 		endfunction()
 
-		# The Simpsons Arcade, the arcade game as it is: its EEPROM kept (simpsons.nv), its players' controls in
+		# The Simpsons Arcade Game, the arcade game as it is: its EEPROM kept (simpsons.nv), its players' controls in
 		# controls.ini
-		simpsons_window(simpsons "The Simpsons Arcade" io.github.cheviman.simpsons-arcade ${SIMPSONS_WINDOW_PROGRAM})
+		simpsons_window(simpsons "The Simpsons Arcade Game" io.github.cheviman.simpsons-arcade ${SIMPSONS_WINDOW_PROGRAM})
 		# The Simpsons, the console version: its settings in simpsons.ini, OPTIONS > CONTROLS drawing the keys and
 		# buttons with Kenney's Input Prompts Pixel (CC0, ports/sdl2/prompts)
 		if(TARGET simpsons_console_game)
-			simpsons_window(simpsons_console "The Simpsons Arcade Game" io.github.cheviman.simpsons simpsons_console_game)
+			simpsons_window(simpsons_console "The Simpsons Mr. Plow Edition" io.github.cheviman.simpsons simpsons_console_game)
 		endif()
 
 		# The devices' makers (tmnt-port's), which the player runs on a computer with the player's own ROM set: its
 		# assets pack as the first run makes it (ports/switch/nsp/rom_pack.c: the decompiled game's ROM set reader and
 		# pack writer, so the devices' version), never a byte of the set in them. Simpsons NSP (ports/switch/nsp): The
-		# Simpsons' and The Simpsons Arcade's .nsps out of the Switch build's pieces (the folder switch beside it), the
+		# Simpsons' and The Simpsons Arcade Game's .nsps out of the Switch build's pieces (the folder switch beside it), the
 		# pack and the player's console keys. Simpsons Anbernic (ports/anbernic/maker): the folder PORTS for an Anbernic
 		# H700 handheld's card out of the games' Anbernic build (the folder anbernic beside it) and the pack. Console
 		# programs (SDL2 without SDL2main) whose window opens when they are started with nothing, its letters
@@ -485,7 +485,7 @@ if(SIMPSONS_WINDOW_PROGRAM AND NOT SIMPSONS_DEVICE)
 				ports/anbernic/maker/main.c ports/anbernic/maker/make_ports.c ports/anbernic/maker/window.c)
 			target_compile_definitions(simpsons_anbernic_maker PRIVATE
 				[[FOLDER_TITLE="The folder for PORTS (the card's Roms)"]])
-			# Simpsons APK (ports/android/apk, tmnt-port's): The Simpsons' and The Simpsons Arcade's APKs out of the
+			# Simpsons APK (ports/android/apk, tmnt-port's): The Simpsons' and The Simpsons Arcade Game's APKs out of the
 			# Android build (android/simpsons-base.apk and simpsons-arcade-base.apk beside it), the pack and the player's
 			# icon and TV banner, signed with a key of the player's own made once (v2's signature: no Java nor Android SDK
 			# on the player's computer; BCryptGenRandom draws the key on Windows)
@@ -493,14 +493,14 @@ if(SIMPSONS_WINDOW_PROGRAM AND NOT SIMPSONS_DEVICE)
 				ports/android/apk/make_apk.c ports/android/apk/zip.c ports/android/apk/sign.c ports/android/apk/key.c
 				ports/android/apk/ecdsa.c ports/switch/nsp/crypto.c ports/android/apk/window.c)
 			target_compile_definitions(simpsons_apk_maker PRIVATE
-				[[FOLDER_TITLE="The folder for The Simpsons Arcade Game.apk and The Simpsons Arcade.apk"]])
+				[[FOLDER_TITLE="The folder for The Simpsons Mr. Plow Edition.apk and The Simpsons Arcade Game.apk"]])
 			if(WIN32)
 				target_link_libraries(simpsons_apk_maker PRIVATE bcrypt)
 			endif()
 		endif()
 
 		# The Windows package (simpsons_package): what a player downloads, package/simpsons-windows-x64.zip in the build
-		# folder (SIMPSONS_PACKAGE_DIR), a folder simpsons with The Simpsons Arcade.exe and The Simpsons Arcade Game.exe (SDL2
+		# folder (SIMPSONS_PACKAGE_DIR), a folder simpsons with The Simpsons Arcade Game.exe and The Simpsons Mr. Plow Edition.exe (SDL2
 		# inside them with SIMPSONS_STATIC_SDL2, else SDL2.dll beside them), the pictures they write with (font.bmp,
 		# input_prompts.bmp), the package's README.txt (docs/package), the project's LICENSE.txt, and licenses/ with the
 		# terms of what is in it or what it follows: MAME's and ymfm's (the board's video and sound), SDL2's,
@@ -549,11 +549,11 @@ if(SIMPSONS_WINDOW_PROGRAM AND NOT SIMPSONS_DEVICE)
 				COMMAND ${CMAKE_COMMAND} -E tar cf ${SIMPSONS_PACKAGE_NAME}.zip --format=zip simpsons
 				WORKING_DIRECTORY ${SIMPSONS_PACKAGE_DIR}
 				DEPENDS simpsons simpsons_console
-				COMMENT "Packing The Simpsons Arcade and The Simpsons Arcade Game: ${SIMPSONS_PACKAGE_NAME}.zip"
+				COMMENT "Packing The Simpsons Arcade Game and The Simpsons Mr. Plow Edition: ${SIMPSONS_PACKAGE_NAME}.zip"
 				VERBATIM)
 		endif()
 	else()
-		message(WARNING "No SDL2: the games (The Simpsons Arcade and The Simpsons Arcade Game) are not built, only the development "
+		message(WARNING "No SDL2: the games (The Simpsons Arcade Game and The Simpsons Mr. Plow Edition) are not built, only the development "
 			"tools. -DSIMPSONS_STATIC_SDL2=ON builds SDL2 from its source into the games, as the packages do; or SDL2 "
 			"from the system, on Windows its development package for Visual C++ unpacked in build/downloads/sdl2 "
 			"(build/downloads/sdl2/SDL2-2.x.y/cmake)")

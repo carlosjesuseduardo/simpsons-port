@@ -1,7 +1,7 @@
 /**
  *    Name:        touch.c
  *    Description: the touch screen's controls (Android): a stick where the left thumb lands, ATTACK and JUMP at the
- *                 right, START (The Simpsons) or COIN (The Simpsons Arcade) over them, drawn over the picture, and
+ *                 right, START (The Simpsons) or COIN (The Simpsons Arcade Game) over them, drawn over the picture, and
  *                 what the fingers on them hold: player 1's controls
  *    Version:     0.1.0
  *    Created:     13-11-2026
@@ -13,7 +13,7 @@
  *    buttons). A finger that lands on the screen's left half is the stick: its centre where it landed, its way the
  *    finger's from there (eight, as the cabinet's); one on a button holds it, and sliding onto the other holds that
  *    one. START is the console's: a player out of the game comes in, one in it pauses (main.c, console_start_pauses);
- *    in The Simpsons Arcade it is COIN, and ATTACK brings Marge in, as the cabinet's factory settings have it. On a
+ *    in The Simpsons Arcade Game it is COIN, and ATTACK brings Marge in, as the cabinet's factory settings have it. On a
  *    phone the controls are drawn from the screen's sides, over the picture's corners; on a screen taller than the
  *    picture by a fifth or more (an open Fold's, a tablet's) the picture goes to the top and the controls into the
  *    room under it. Their size is the area's smaller side's (its height, or its width over AREA_ASPECT), and never

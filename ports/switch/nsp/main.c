@@ -10,7 +10,7 @@
  *    license:BSD-3-Clause
  *    Usage: Simpsons NSP [--keys FILE] [--rom FILE] [--switch FOLDER] [--out FILE] [--icon FILE]
  *
- *    The .nsps (The Simpsons Arcade Game.nsp, The Simpsons Arcade.nsp beside it) are made in make_nsp.c. By default every file
+ *    The .nsps (The Simpsons Mr. Plow Edition.nsp, The Simpsons Arcade Game.nsp beside it) are made in make_nsp.c. By default every file
  *    is beside the tool (prod.keys also in .switch in the user's folder), the games' Switch pieces in the folder
  *    switch beside it (switch/simpsons and switch/simpsons-arcade), and the .nsps are written beside it. Files
  *    dropped on the tool are taken by what they are: a .keys (or .txt) the keys, a .jpg the icon, anything else the
@@ -87,7 +87,7 @@ int main(int argc, char **argv)
 				"  --rom     the arcade ROM set (simpsons.zip, MAME's, 4 Players World; by default beside it)\n"
 				"  --switch  the games' Switch build: simpsons and simpsons-arcade, each with main, main.npdm,\n"
 				"            control.nacp, icon.jpg (by default switch beside it)\n"
-				"  --out     The Simpsons' .nsp to write, The Simpsons Arcade's beside it (by default The Simpsons Arcade Game.nsp\n"
+				"  --out     The Simpsons' .nsp to write, The Simpsons Arcade Game's beside it (by default The Simpsons Mr. Plow Edition.nsp\n"
 				"            beside it)\n"
 				"  --icon    the HOME menu's icon, a 256 x 256 JPEG of yours (by default icon.jpg beside it, else the build's)\n");
 			return 2;

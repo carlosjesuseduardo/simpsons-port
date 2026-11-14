@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
 	Name:        AndroidManifest.xml.in
-	Description: an Android app of The Simpsons' (The Simpsons, The Simpsons Arcade): SDL's activity
+	Description: an Android app of The Simpsons' (The Simpsons, The Simpsons Arcade Game): SDL's activity
 	             (org.libsdl.app.SDLActivity, its Java from SDL's source) starting the game in libmain.so, on its side
 	             of the screen, full screen
 	Version:     0.1.0

@@ -220,7 +220,7 @@ static void refresh(void)
 }
 
 /* What making the APK failed on, as the window shows it: a path the player gave as it is; one of the
-   defaults' by where it is ("The Simpsons Arcade Game.apk.assets, beside this tool"), the signing key's too */
+   defaults' by where it is ("The Simpsons Mr. Plow Edition.apk.assets, beside this tool"), the signing key's too */
 static void place_failure(void)
 {
 	const char *const detail = tool.outcome.detail;

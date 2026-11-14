@@ -659,7 +659,7 @@ static int make_one(const apk_inputs *inputs, FILE *log, apk_step step, void *co
 }
 
 /* The Simpsons' two games, each an APK of its own (its package, its base APK in the folder android) from the same
-   assets pack and signed with the same key: The Simpsons Arcade Game.apk where 'out' says, The Simpsons Arcade.apk beside it */
+   assets pack and signed with the same key: The Simpsons Mr. Plow Edition.apk where 'out' says, The Simpsons Arcade Game.apk beside it */
 static const struct
 {
 	const char *base;

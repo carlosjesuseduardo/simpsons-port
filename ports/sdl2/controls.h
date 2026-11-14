@@ -1,7 +1,7 @@
 /**
  *    Name:        controls.h
  *    Description: the keys and game controller buttons of each player's controls (The Simpsons' OPTIONS > CONTROLS,
- *                 The Simpsons Arcade's four players), and the file that keeps them (controls.ini)
+ *                 The Simpsons Arcade Game's four players), and the file that keeps them (controls.ini)
  *    Version:     0.1.0
  *    Created:     13-11-2026
  *    Modified:    13-11-2026
@@ -15,7 +15,7 @@
 #ifdef SIMPSONS_CONSOLE
 #include "console.h"    /* (its CONTROL_* and CONTROLS: the lines of OPTIONS > CONTROLS) */
 #else
-/* The Simpsons Arcade's: each player's controls, bound to keys and game controller buttons (the console's
+/* The Simpsons Arcade Game's: each player's controls, bound to keys and game controller buttons (the console's
    console.h has the same) */
 enum
 {

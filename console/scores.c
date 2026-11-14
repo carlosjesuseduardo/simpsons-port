@@ -13,7 +13,7 @@
  *    fills from default_high_scores (07893E, BAT HOM LIS MAR MAG INC SIM MAT FOX ...) and loses at power-off: the
  *    EEPROM holds its test pattern and the settings alone. The Simpsons keeps the table in simpsons.scores, in the
  *    folder of what the game keeps (apart from simpsons.ini: the settings are OPTIONS' and written whole whenever they
- *    change, the table is the game's own memory, as The Simpsons Arcade's simpsons.nv is the EEPROM's, and a broken
+ *    change, the table is the game's own memory, as The Simpsons Arcade Game's simpsons.nv is the EEPROM's, and a broken
  *    table leaves the settings alone). The file (little endian): "SMHS", u32 the format, the table's 80 bytes as the
  *    game keeps them, u32 FNV-1a of the format and the table; a file that is not that (or a table whose scores are no
  *    BCD, whose characters are none of the four, or not best first) is not taken, and the boot's table stays.
@@ -26,7 +26,7 @@
  *    the state's table in the game, perhaps an older one than kept: the kept table goes back into the game once the
  *    game loaded is over (out of the game mode), and what comes into the state's table meanwhile goes into the kept
  *    one by its score, as high_score_rank places it (before the first entry whose score is no higher). The Simpsons
- *    Arcade keeps nothing, as the cabinet.
+ *    Arcade Game keeps nothing, as the cabinet.
  */
 #include "console_internal.h"
 

@@ -1,5 +1,5 @@
 # Name:        switch.cmake
-# Description: the Nintendo Switch build (devkitPro's toolchain): The Simpsons and The Simpsons Arcade, each as the
+# Description: the Nintendo Switch build (devkitPro's toolchain): The Simpsons and The Simpsons Arcade Game, each as the
 #              pieces of its .nsp (the NSO, main.npdm, the NACP and the icon) and as an .nro (with the assets pack
 #              where this build has it)
 # Version:     0.1.0
@@ -25,8 +25,8 @@
 #       -DCMAKE_DEPENDS_USE_COMPILER=FALSE [-DSIMPSONS_BIN_DIR=...]
 #   cmake --build build/switch --target simpsons_switch_games --parallel 16
 
-set(SIMPSONS_SWITCH_TITLE_ID 050053494d500000)           # The Simpsons Arcade Game
-set(SIMPSONS_ARCADE_SWITCH_TITLE_ID 050053494d510000)    # The Simpsons Arcade
+set(SIMPSONS_SWITCH_TITLE_ID 050053494d500000)           # The Simpsons Mr. Plow Edition
+set(SIMPSONS_ARCADE_SWITCH_TITLE_ID 050053494d510000)    # The Simpsons Arcade Game
 
 target_compile_definitions(simpsons_console_program PUBLIC SIMPSONS_HANDHELD SIMPSONS_SCREEN_WIDE
 	SIMPSONS_SYSTEM_EXIT)
@@ -112,8 +112,8 @@ function(simpsons_switch_game target name folder title_id program)
 	set(SIMPSONS_SWITCH_OUTPUTS ${SIMPSONS_SWITCH_OUTPUTS} ${outputs} PARENT_SCOPE)
 endfunction()
 
-simpsons_switch_game(simpsons_switch "The Simpsons Arcade Game" simpsons ${SIMPSONS_SWITCH_TITLE_ID} simpsons_console_game)
-simpsons_switch_game(simpsons_arcade_switch "The Simpsons Arcade" simpsons-arcade ${SIMPSONS_ARCADE_SWITCH_TITLE_ID}
+simpsons_switch_game(simpsons_switch "The Simpsons Mr. Plow Edition" simpsons ${SIMPSONS_SWITCH_TITLE_ID} simpsons_console_game)
+simpsons_switch_game(simpsons_arcade_switch "The Simpsons Arcade Game" simpsons-arcade ${SIMPSONS_ARCADE_SWITCH_TITLE_ID}
 	${SIMPSONS_WINDOW_PROGRAM})
 if(NOT EXISTS ${SIMPSONS_SWITCH_PACK})
 	message(STATUS "No assets pack at ${SIMPSONS_SWITCH_PACK}: the .nro without one (SIMPSONS_BIN_DIR/switch-nro)")

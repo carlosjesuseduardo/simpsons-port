@@ -465,8 +465,8 @@ static int make_one(const nsp_inputs *inputs, FILE *log, nsp_step step, void *co
 	return made;
 }
 
-/* The two games, The Simpsons and The Simpsons Arcade, each an .nsp of its own (its title, its pieces in the folder
-   switch's own folder), from the same assets pack: The Simpsons Arcade Game.nsp where 'out' says, The Simpsons Arcade.nsp beside
+/* The two games, The Simpsons and The Simpsons Arcade Game, each an .nsp of its own (its title, its pieces in the folder
+   switch's own folder), from the same assets pack: The Simpsons Mr. Plow Edition.nsp where 'out' says, The Simpsons Arcade Game.nsp beside
    it */
 static const struct
 {

@@ -17,8 +17,8 @@
 #include <stdio.h>
 
 #define NSP_PATH_SIZE 1100
-#define NSP_FILE      "The Simpsons Arcade Game.nsp"
-#define NSP_ARCADE_FILE "The Simpsons Arcade.nsp"    /* (The Simpsons Arcade's, beside The Simpsons') */
+#define NSP_FILE      "The Simpsons Mr. Plow Edition.nsp"
+#define NSP_ARCADE_FILE "The Simpsons Arcade Game.nsp"    /* (The Simpsons Arcade Game's, beside The Simpsons') */
 #define NSP_OWN_ICON  "icon.jpg"         /* the player's own icon, taken when it is beside the tool */
 
 /* What the .nsp is made of, and where it goes */
@@ -29,7 +29,7 @@ typedef struct
 	char pieces[NSP_PATH_SIZE];    /* the games' Switch builds, the folder switch: simpsons and simpsons-arcade, each
 	                                  with main, main.npdm, control.nacp, icon.jpg */
 	char icon[NSP_PATH_SIZE];      /* the HOME menu's icon, a 256 x 256 JPEG of the player's; "" the build's */
-	char out[NSP_PATH_SIZE];       /* The Simpsons' .nsp to write; The Simpsons Arcade's beside it */
+	char out[NSP_PATH_SIZE];       /* The Simpsons' .nsp to write; The Simpsons Arcade Game's beside it */
 } nsp_inputs;
 
 /* How making it went */
@@ -48,11 +48,11 @@ typedef void (*nsp_step)(void *context, const char *step);
 void nsp_take_dropped(nsp_inputs *inputs, const char *path);
 
 /* The inputs not given, beside the tool (in the folder 'here', with its separator): prod.keys (else in
-   .switch in the user's folder), simpsons.zip, the folder switch, The Simpsons Arcade Game.nsp, and the player's icon.jpg
+   .switch in the user's folder), simpsons.zip, the folder switch, The Simpsons Mr. Plow Edition.nsp, and the player's icon.jpg
    when it is there (else the build's own icon) */
 void nsp_defaults(nsp_inputs *inputs, const char *here);
 
-/* The .nsps, The Simpsons' and The Simpsons Arcade's: true when both are written. Each step's lines go to 'log' (the
+/* The .nsps, The Simpsons' and The Simpsons Arcade Game's: true when both are written. Each step's lines go to 'log' (the
    command line's) unless it is NULL; 'step' (or NULL) is told each step as it starts. What failed is in 'outcome' */
 int make_nsp(const nsp_inputs *inputs, FILE *log, nsp_step step, void *context, nsp_outcome *outcome);
 

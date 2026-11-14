@@ -1,12 +1,12 @@
-The Simpsons Arcade and The Simpsons Arcade Game for iPhone and iPad
-====================================================================
+The Simpsons Arcade Game and The Simpsons Mr. Plow Edition for iPhone and iPad
+==============================================================================
 
 Konami's The Simpsons (1991), the arcade game for four players, as a native game: decompiled to C and checked
-frame by frame against MAME, github.com/cheviman/simpsons-port. The Simpsons Arcade is the arcade game as it
-is; The Simpsons Arcade Game, the console version (menus of its own, no coins: START brings a player in). This
-is the package for iOS and iPadOS (13 or later, an iPhone or an iPad of the last years: arm64): the two games
-as .ipa files, without their assets and not signed. Nothing of the game comes in this package: the games take
-their graphics and sounds out of your own ROM set.
+frame by frame against MAME, github.com/cheviman/simpsons-port. The Simpsons Arcade Game is the arcade game as
+it is; The Simpsons Mr. Plow Edition, the console version (menus of its own, no coins: START brings a player
+in). This is the package for iOS and iPadOS (13 or later, an iPhone or an iPad of the last years: arm64): the
+two games as .ipa files, without their assets and not signed. Nothing of the game comes in this package: the
+games take their graphics and sounds out of your own ROM set.
 
 They are not on the App Store, and never will be: the game is Konami's, and you bring the ROM set. You
 install them yourself ("sideloading"), and the tool you install them with signs them for your device.
@@ -18,8 +18,8 @@ What you need
 
 Installing
 ----------
-The .ipa files are in ios/: The Simpsons Arcade Game.ipa and The Simpsons Arcade.ipa. Install either or both
-with one of these, which sign an app with your own Apple ID as they install it:
+The .ipa files are in ios/: The Simpsons Mr. Plow Edition.ipa and The Simpsons Arcade Game.ipa. Install either
+or both with one of these, which sign an app with your own Apple ID as they install it:
 
 - AltStore (altstore.io) or SideStore (sidestore.io): install it on the device as its site says, then open
   the .ipa with it (AltStore's My Apps, the + at the top).
@@ -36,7 +36,7 @@ Developer Mode) and to trust your Apple ID (Settings, General, VPN & Device Mana
 The ROM set
 -----------
 Each game has its own folder, which the Files app shows: open the game once (it says it has no ROM set),
-then in the Files app go to On My iPhone (On My iPad), The Simpsons (or The Simpsons Arcade), and put
+then in the Files app go to On My iPhone (On My iPad), The Simpsons (or The Simpsons Arcade Game), and put
 simpsons.zip there. From a computer: Finder (or the Apple Devices app on Windows), the device, Files, the
 game, and drop simpsons.zip on it. Open the game again: the first start takes the assets out of
 simpsons.zip into one file, simpsons.assets, in that same folder (some seconds); from then on the game
@@ -46,13 +46,14 @@ What the games make from your ROM set is yours alone: never share it.
 
 Playing
 -------
-The touch screen has a stick where your left thumb lands, ATTACK and JUMP at the right, and START (COIN on The
-Simpsons Arcade, where ATTACK then brings Marge in). A game controller (MFi, Xbox, PlayStation, Switch Pro)
-hides them, and each controller is a player (player 1 is Marge, 2 Homer, 3 Bart, 4 Lisa): the stick or the
-d-pad moves, A attacks, B jumps, Menu is START (and pauses The Simpsons Arcade Game), and on The Simpsons
-Arcade the Options or View button puts a coin in. Going to the home screen pauses The Simpsons Arcade Game;
-swipe up from the bottom (twice: the first swipe only shows the bar) to leave either game. The games keep
-their settings and their logs (simpsons.log, simpsons-arcade.log) in their folders, beside simpsons.assets.
+The touch screen has a stick where your left thumb lands, ATTACK and JUMP at the right, and START (COIN on
+The Simpsons Arcade Game, where ATTACK then brings Marge in). A game controller (MFi, Xbox, PlayStation,
+Switch Pro) hides them, and each controller is a player (player 1 is Marge, 2 Homer, 3 Bart, 4 Lisa): the
+stick or the d-pad moves, A attacks, B jumps, Menu is START (and pauses The Simpsons Mr. Plow Edition), and on
+The Simpsons Arcade Game the Options or View button puts a coin in. Going to the home screen pauses
+The Simpsons Mr. Plow Edition; swipe up from the bottom (twice: the first swipe only shows the bar) to leave
+either game. The games keep their settings and their logs (simpsons.log, simpsons-arcade.log) in their
+folders, beside simpsons.assets.
 
 Licenses
 --------

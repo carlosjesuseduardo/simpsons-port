@@ -8,14 +8,14 @@
  *    Author:      Sebastian Toyos
  *
  *    license:BSD-3-Clause
- *    Usage: "The Simpsons Arcade" [--script FILE [--fast]] [--hashes FILE] [--video-hashes FILE] [--sound-hashes FILE]
+ *    Usage: "The Simpsons Arcade Game" [--script FILE [--fast]] [--hashes FILE] [--video-hashes FILE] [--sound-hashes FILE]
  *                                 [--service] [--assets FOLDER|PACK] [--video-dump FRAME ... --video-dir DIR]
  *                                 [--eeprom FILE]
- *           "The Simpsons Arcade Game" [--assets FOLDER|PACK] [--script FILE] [--fast] [--actions FILE]
+ *           "The Simpsons Mr. Plow Edition" [--assets FOLDER|PACK] [--script FILE] [--fast] [--actions FILE]
  *                          [--video-dump FRAME ... --video-dir DIR] [--wide KIND] [--wide-check] [--arcade-start]
  *                          [--stereo] [--scores FILE] [--state FILE [--state-save FRAME] [--state-load]]
  *
- *    The Simpsons Arcade, the arcade game as it is (runtime/src/game.c and the program): this file only wraps it.
+ *    The Simpsons Arcade Game, the arcade game as it is (runtime/src/game.c and the program): this file only wraps it.
  *    When each frame is done (game_frame_done) the port reads the keyboard and the game controllers into the board's
  *    inputs for the next one, closes the frame's sound and queues it, puts the frame in the window, and waits for the
  *    frame's time (the board's 59.185 a second) to pass. Its EEPROM (the test mode's settings) is kept in simpsons.nv,
@@ -91,7 +91,7 @@
  *    frame (the state keeps a script's place too).
  *    Each picture written says on the standard output where the console stands. A scripted run (--script, --actions,
  *    the hashes, --video-dump) reads and writes no settings, controls, EEPROM, high scores or state: it starts from the
- *    factory's, but with --eeprom FILE (The Simpsons Arcade), which keeps the EEPROM there in place of simpsons.nv,
+ *    factory's, but with --eeprom FILE (The Simpsons Arcade Game), which keeps the EEPROM there in place of simpsons.nv,
  *    --scores FILE and --state FILE (The Simpsons), for checks.
  *
  *    Controls (controls.ini; the cabinet has four players, each with a coin slot and a start button, which the
@@ -100,8 +100,8 @@
  *      player 1: arrows, Z or left Ctrl attack, X or left Alt jump, Enter or 1 start
  *      player 2: R F D G, A attack, S jump, 2 start; player 3: I K J L, right Ctrl, right Shift, 3;
  *      player 4: the keypad's 8 2 4 6, 0 attack, its point jump, 4
- *      5, 6, 7, 8                     coins 1-4 (The Simpsons Arcade)
- *      F2                             the test switch (held: the test mode's menu; The Simpsons Arcade)
+ *      5, 6, 7, 8                     coins 1-4 (The Simpsons Arcade Game)
+ *      F2                             the test switch (held: the test mode's menu; The Simpsons Arcade Game)
  *      Escape                         quit (The Simpsons: back, the pause)
  *      F11 or Alt+Enter               full screen
  *      F3                             the next kind of pixels: sharp, smooth, bilinear, CRT
@@ -156,13 +156,13 @@
 #include <string.h>
 
 #ifdef SIMPSONS_CONSOLE
-#define TITLE               "The Simpsons Arcade Game"
+#define TITLE               "The Simpsons Mr. Plow Edition"
 #define FILE_NAME           "simpsons"
 #define SETTINGS_FILE       "simpsons.ini"
 #define SCORES_FILE         "simpsons.scores"    /* the high score table (console/scores.c) */
 #define STATE_FILE          "simpsons.state"     /* the pause's saved state, one (game/state.h) */
 #else
-#define TITLE               "The Simpsons Arcade"
+#define TITLE               "The Simpsons Arcade Game"
 #define FILE_NAME           "simpsons-arcade"
 #define EEPROM_FILE         "simpsons.nv"     /* the ER5911's 128 bytes, as MAME keeps them */
 #endif
@@ -1818,7 +1818,7 @@ static void run_pause(void)
 	next_frame = 0;    /* (the pace from here) */
 }
 #else
-/* ---- The Simpsons Arcade's controls into the board's inputs, which it reads in the next frame (active low: a
+/* ---- The Simpsons Arcade Game's controls into the board's inputs, which it reads in the next frame (active low: a
    cleared bit is a pressed button): each player's as controls.ini binds them, the coins 5 to 8 and each game
    controller's Back, the test switch F2 ---- */
 
@@ -1847,7 +1847,7 @@ static void read_controls(void)
 			coins &= (uint8_t)~(SIMPSONS_COIN1 << player);
 #ifdef SIMPSONS_TOUCH
 		if (player == 0 && touch_start())
-			coins &= (uint8_t)~SIMPSONS_COIN1;    /* (The Simpsons Arcade's touch screen: COIN) */
+			coins &= (uint8_t)~SIMPSONS_COIN1;    /* (The Simpsons Arcade Game's touch screen: COIN) */
 #endif
 	}
 	simpsons_board.coins = coins;
@@ -1857,7 +1857,7 @@ static void read_controls(void)
 		simpsons_board.test |= SIMPSONS_TEST_SERVICE;
 }
 
-/* ---- The Simpsons Arcade's EEPROM, kept: simpsons.nv in the folder of what the game keeps, read as the game starts,
+/* ---- The Simpsons Arcade Game's EEPROM, kept: simpsons.nv in the folder of what the game keeps, read as the game starts,
    written when the game has changed it (the board says so: simpsons_eeprom_written), at the end of that frame ---- */
 
 static char eeprom_path[1100];
@@ -2002,7 +2002,7 @@ static void load_settings(void)
 }
 #endif
 
-/* VSYNC (The Simpsons' OPTIONS > VIDEO, The Simpsons Arcade's always): the renderer shows each frame at the screen's
+/* VSYNC (The Simpsons' OPTIONS > VIDEO, The Simpsons Arcade Game's always): the renderer shows each frame at the screen's
    refresh, unless the frames run as fast as they can (--fast). The game keeps its own pace, the board's 59.19 frames
    a second (wait_for_frame): a faster screen (120 Hz) shows a frame twice. A device's screen keeps the system's own
    refresh (and the Anbernic's SDL 2.0.12 has no SDL_RenderSetVSync), as tmnt-port's */
@@ -2398,7 +2398,7 @@ static int switch_take_old_folder(char *copied, size_t size)
 		{ "simpsons.ini", "bart_shirt=" },             /* (The Simpsons' SETTINGS_FILE) */
 		{ "simpsons.scores", NULL },                   /* (SCORES_FILE) */
 		{ "simpsons.state", NULL },                    /* (STATE_FILE) */
-		{ "simpsons.nv", NULL },                       /* (The Simpsons Arcade's EEPROM_FILE) */
+		{ "simpsons.nv", NULL },                       /* (The Simpsons Arcade Game's EEPROM_FILE) */
 		{ CONTROLS_FILE, "; The Simpsons' controls" }, /* (controls.c's first line) */
 	};
 	struct stat folder;

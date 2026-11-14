@@ -17,12 +17,12 @@
 #include <stdio.h>
 
 #define APK_PATH_SIZE    1100
-#define APK_FILE         "The Simpsons Arcade Game.apk"
+#define APK_FILE         "The Simpsons Mr. Plow Edition.apk"
 #define APK_OWN_ICON     "icon.jpg"         /* the player's own icon, taken when it is beside the tool */
 #define APK_OWN_BANNER   "banner.jpg"       /* the player's own TV banner, taken when it is beside the tool */
 #define APK_BASE_FOLDER  "android"
 #define APK_BASE_FILE    "simpsons-base.apk"
-#define APK_ARCADE_FILE  "The Simpsons Arcade.apk"    /* (The Simpsons Arcade's, beside The Simpsons') */
+#define APK_ARCADE_FILE  "The Simpsons Arcade Game.apk"    /* (The Simpsons Arcade Game's, beside The Simpsons') */
 #define APK_ARCADE_BASE_FILE "simpsons-arcade-base.apk"
 #define APK_ICON_MOST    2048    /* the icon's and the banner's most pixels a side: the launcher draws them from memory */
 
@@ -34,8 +34,8 @@ typedef struct
 	char banner[APK_PATH_SIZE];  /* the TV's banner (Android TV, Google TV), a PNG or JPEG of the player's wider than
 	                                tall, shown as 16:9; "" the game's own */
 	char base[APK_PATH_SIZE];    /* The Simpsons' Android build: simpsons-base.apk, without the assets or a signature;
-	                                The Simpsons Arcade's, simpsons-arcade-base.apk, beside it */
-	char out[APK_PATH_SIZE];     /* The Simpsons' APK to write; The Simpsons Arcade's beside it */
+	                                The Simpsons Arcade Game's, simpsons-arcade-base.apk, beside it */
+	char out[APK_PATH_SIZE];     /* The Simpsons' APK to write; The Simpsons Arcade Game's beside it */
 } apk_inputs;
 
 /* How making it went */
@@ -56,11 +56,11 @@ typedef void (*apk_step)(void *context, const char *step);
 void apk_take_dropped(apk_inputs *inputs, const char *path);
 
 /* The inputs not given, beside the tool (in the folder 'here', with its separator): simpsons.zip,
-   android/simpsons-base.apk, The Simpsons Arcade Game.apk, and the player's icon.jpg and banner.jpg when they are there (else the
+   android/simpsons-base.apk, The Simpsons Mr. Plow Edition.apk, and the player's icon.jpg and banner.jpg when they are there (else the
    game's own) */
 void apk_defaults(apk_inputs *inputs, const char *here);
 
-/* The APKs, The Simpsons' and The Simpsons Arcade's: true when both are written. Each step's lines go to 'log' (the
+/* The APKs, The Simpsons' and The Simpsons Arcade Game's: true when both are written. Each step's lines go to 'log' (the
    command line's) unless it is NULL; 'step' (or NULL) is told each step as it starts. What failed is in 'outcome' */
 int make_apk(const apk_inputs *inputs, FILE *log, apk_step step, void *context, apk_outcome *outcome);
 

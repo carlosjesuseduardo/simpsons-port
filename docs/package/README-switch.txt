@@ -1,12 +1,12 @@
-The Simpsons Arcade and The Simpsons Arcade Game for the Nintendo Switch
-========================================================================
+The Simpsons Arcade Game and The Simpsons Mr. Plow Edition for the Nintendo Switch
+==================================================================================
 
 Konami's The Simpsons (1991), the arcade game for four players, as a native game: decompiled to C and checked
-frame by frame against MAME, github.com/cheviman/simpsons-port. The Simpsons Arcade is the arcade game as it
-is; The Simpsons Arcade Game, the console version (menus of its own, no coins: START brings a player in). This
-is the Switch's package: the games without their assets, ready for the Homebrew Menu, and the tool that makes
-your .nsp of them on your computer. Nothing of the game comes in this package: the games take their graphics
-and sounds out of your own ROM set.
+frame by frame against MAME, github.com/cheviman/simpsons-port. The Simpsons Arcade Game is the arcade game as
+it is; The Simpsons Mr. Plow Edition, the console version (menus of its own, no coins: START brings a player
+in). This is the Switch's package: the games without their assets, ready for the Homebrew Menu, and the tool
+that makes your .nsp of them on your computer. Nothing of the game comes in this package: the games take their
+graphics and sounds out of your own ROM set.
 
 What you need
 -------------
@@ -15,11 +15,11 @@ What you need
 
 From the Homebrew Menu (the .nro)
 ---------------------------------
-Copy what is in sd/ to the root of your SD card: switch/simpsons-arcade/The Simpsons Arcade Game.nro and
-switch/simpsons-arcade/The Simpsons Arcade.nro. Put simpsons.zip in switch/simpsons-arcade/ beside them, and
-start either game from the Homebrew Menu. The first start takes the assets out of simpsons.zip into one file,
-switch/simpsons-arcade/simpsons.assets (some seconds, the screen black); both games start from it from then
-on. Without simpsons.zip the game says where to put it (press + to leave).
+Copy what is in sd/ to the root of your SD card: switch/simpsons-arcade/The Simpsons Mr. Plow Edition.nro and
+switch/simpsons-arcade/The Simpsons Arcade Game.nro. Put simpsons.zip in switch/simpsons-arcade/ beside them,
+and start either game from the Homebrew Menu. The first start takes the assets out of simpsons.zip into one
+file, switch/simpsons-arcade/simpsons.assets (some seconds, the screen black); both games start from it from
+then on. Without simpsons.zip the game says where to put it (press + to leave).
 
 On the HOME menu (the .nsp)
 ---------------------------
@@ -31,18 +31,18 @@ Start the tool for your computer, with a double click:
 
 Leave it where it is, beside the folder switch (the games' Switch build) and font.bmp. Drop simpsons.zip and
 your console's prod.keys on its window (or put them beside the tool), and a 256 x 256 JPEG of yours if you
-want your own HOME menu icon. It writes The Simpsons Arcade Game.nsp and The Simpsons Arcade.nsp with the
-assets in them; install them with an installer (DBI, Tinfoil, Goldleaf) on a console with Atmosphere and
-signature patches.
+want your own HOME menu icon. It writes The Simpsons Mr. Plow Edition.nsp and The Simpsons Arcade Game.nsp
+with the assets in them; install them with an installer (DBI, Tinfoil, Goldleaf) on a console with Atmosphere
+and signature patches.
 
 What either way makes from your ROM set is yours alone: never share it.
 
 Playing
 -------
 Each controller is a player, up to four (player 1 is Marge, 2 Homer, 3 Bart, 4 Lisa): the stick or the d-pad
-moves, A attacks, B jumps, + is START (and pauses The Simpsons Arcade Game); on The Simpsons Arcade, minus
-puts a coin in, and a coin and A bring the player in. HOME leaves the game. The games keep their settings and
-their logs (simpsons.log, simpsons-arcade.log) on the SD card, in switch/simpsons-arcade/.
+moves, A attacks, B jumps, + is START (and pauses The Simpsons Mr. Plow Edition); on The Simpsons Arcade Game,
+minus puts a coin in, and a coin and A bring the player in. HOME leaves the game. The games keep their
+settings and their logs (simpsons.log, simpsons-arcade.log) on the SD card, in switch/simpsons-arcade/.
 
 From 1.0.0: 1.0.0 used switch/simpsons/, which The Simpsons: Hit & Run's port uses too. At their first start
 the games copy their own files from there (simpsons.zip, simpsons.assets, the settings, the high scores, the

@@ -2,7 +2,7 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <!--
 	Name:        Info.plist.in
-	Description: an iOS app of The Simpsons' (The Simpsons, The Simpsons Arcade): SDL's UIKit app starting the game,
+	Description: an iOS app of The Simpsons' (The Simpsons, The Simpsons Arcade Game): SDL's UIKit app starting the game,
 	             on the whole screen, in landscape, its Documents folder shown in the Files app
 	Version:     0.1.0
 	Created:     13-11-2026

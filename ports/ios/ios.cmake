@@ -1,5 +1,5 @@
 # Name:        ios.cmake
-# Description: the iOS and iPadOS build (Xcode, CMake's Xcode generator): The Simpsons and The Simpsons Arcade as apps
+# Description: the iOS and iPadOS build (Xcode, CMake's Xcode generator): The Simpsons and The Simpsons Arcade Game as apps
 #              on SDL2's UIKit backend, for an iPhone or an iPad (arm64) or the Simulator, and an unsigned .ipa of each
 # Version:     0.1.0
 # Created:     13-11-2026
@@ -26,8 +26,8 @@
 #       -DCMAKE_OSX_DEPLOYMENT_TARGET=13.0 -DSIMPSONS_REFERENCE_TOOLS=OFF [-DCMAKE_OSX_SYSROOT=iphonesimulator]
 #       [-DSIMPSONS_BIN_DIR=build/bin-ios] [-DSIMPSONS_IOS_TEAM=<team ID>]
 #   cmake --build build/ios --config Release --target simpsons_ios_games -- CODE_SIGNING_ALLOWED=NO
-# The apps: SIMPSONS_BIN_DIR/ios/The Simpsons Arcade Game.app and The Simpsons Arcade.app; for a device, also The Simpsons Arcade Game.ipa and
-# The Simpsons Arcade.ipa there (each app inside Payload/, zipped).
+# The apps: SIMPSONS_BIN_DIR/ios/The Simpsons Mr. Plow Edition.app and The Simpsons Arcade Game.app; for a device, also The Simpsons Mr. Plow Edition.ipa and
+# The Simpsons Arcade Game.ipa there (each app inside Payload/, zipped).
 
 if(NOT CMAKE_GENERATOR STREQUAL "Xcode")
 	message(FATAL_ERROR "The iOS build is the Xcode generator's (-G Xcode): Xcode compiles the apps' launch screen and "
@@ -114,7 +114,7 @@ function(simpsons_ios_game target name identifier program)
 	set(SIMPSONS_IOS_OUTPUTS ${SIMPSONS_IOS_OUTPUTS} ${outputs} PARENT_SCOPE)
 endfunction()
 
-simpsons_ios_game(simpsons_ios "The Simpsons Arcade Game" io.github.cheviman.simpsons simpsons_console_game)
-simpsons_ios_game(simpsons_arcade_ios "The Simpsons Arcade" io.github.cheviman.simpsons.arcade ${SIMPSONS_WINDOW_PROGRAM})
+simpsons_ios_game(simpsons_ios "The Simpsons Mr. Plow Edition" io.github.cheviman.simpsons simpsons_console_game)
+simpsons_ios_game(simpsons_arcade_ios "The Simpsons Arcade Game" io.github.cheviman.simpsons.arcade ${SIMPSONS_WINDOW_PROGRAM})
 add_custom_target(simpsons_ios_games ALL DEPENDS ${SIMPSONS_IOS_OUTPUTS})
 add_dependencies(simpsons_ios_games simpsons_ios simpsons_arcade_ios)
