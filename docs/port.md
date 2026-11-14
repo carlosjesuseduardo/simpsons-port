@@ -47,6 +47,10 @@ writes them), `--video-dump FRAME ... --video-dir DIR` (frames as BMP), `--asset
 The Simpsons adds `--actions FILE` (the menus' and the players' presses by frame), `--wide off|16:10|16:9|20:9|auto`,
 `--wide-check`, `--arcade-start` (the arcade's scripts in the console's build, its picture the cabinet's),
 `--stereo`, `--scores FILE` and `--state FILE` with `--state-save FRAME` and `--state-load`.
+`simpsons_console_headless` (built beside them on a computer) is The Simpsons Mr. Plow Edition with no window, for
+quick checks: `--frames N` ends it (600 unless given, or the script's length), with `--script`, `--actions`,
+`--wide`, `--wide-check`, `--arcade-start`, `--video-dump FRAME ... --video-dir DIR`, the hashes and `--dump FRAME ...
+--dump-dir DIR` (the board's memories); some 2000 frames a second.
 
 - `py tools/check_scenarios.py --native-only --video --sound --jobs 16 --bin build/bin --out build/scenarios`: the
   25 scenarios against their references (always `--native-only`: without it the references are written again).

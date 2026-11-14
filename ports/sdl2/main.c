@@ -2197,6 +2197,8 @@ static void on_frame_done(void)
 
 		if (console_wide_check(text, sizeof(text)))
 			printf("frame %" PRIu64 ": WIDE's sides not their map's: %s\n", number, text);
+		if (console_wide_spawn_check(text, sizeof(text)))
+			printf("frame %" PRIu64 ": put in in WIDE's sides' sight: %s\n", number, text);
 	}
 #else
 	if (script)

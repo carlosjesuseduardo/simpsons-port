@@ -3,7 +3,7 @@
  *    Description: Krustyland's clown on a ball, its attacks, and its ball
  *    Version:     0.1.0
  *    Created:     06-11-2026
- *    Modified:    11-11-2026
+ *    Modified:    14-11-2026
  *    Author:      Sebastian Toyos
  *
  *    The Simpsons (arcade, Konami 1991): the game's 053248 program decompiled into C by
@@ -462,7 +462,7 @@ void clown_on_ball_hop_away(uint16_t object)
 }
 
 /* Hops on until the fourth landing, staying within the screen, then goes back to the fight. */
-void clown_on_ball_hop(uint16_t object)
+void CONSOLE_ORIGINAL(clown_on_ball_hop)(uint16_t object)
 {
 	uint32_t landed = 0;
 	uint16_t ignored16 = 0;

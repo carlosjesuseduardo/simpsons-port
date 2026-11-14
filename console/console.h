@@ -264,6 +264,10 @@ int console_wide_view(void);
    their count, 0 when none */
 int console_wide_check(char *text, size_t size);
 
+/* For checks (--wide-check): what the spawn list put in since the last look that the wider screen showed where it was
+   put and the cabinet did not, described in 'text'; their count, 0 when none */
+int console_wide_spawn_check(char *text, size_t size);
+
 /* For checks (--arcade-start): the arcade's own attract mode and controls (a script's coins and players' buttons
    straight onto the board, player N's on slot N), so the arcade's scenarios run as they are in the console's build,
    its WIDE in their games */

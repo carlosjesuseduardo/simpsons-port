@@ -3,7 +3,7 @@
  *    Description: prototypes of the game's functions
  *    Version:     0.1.0
  *    Created:     06-11-2026
- *    Modified:    13-11-2026
+ *    Modified:    14-11-2026
  *    Author:      Sebastian Toyos
  *
  *    The Simpsons (arcade, Konami 1991): the game's 053248 program decompiled into C by
@@ -624,6 +624,7 @@ void krusty_balloon_wait_for_players(uint16_t object);
 void krusty_balloon_fall_and_land(uint16_t object);
 uint16_t krusty_balloon_knocked_up(uint16_t object);
 void krusty_balloon_fly_up(uint16_t object);
+void CONSOLE_ORIGINAL(krusty_balloon_fly_up)(uint16_t object);
 void krusty_balloon_knocked_up_stomp(uint16_t object, uint16_t object_2);
 uint16_t krusty_balloon_flinch(uint16_t balloon);
 uint16_t krusty_balloon_come_in(uint16_t object);
@@ -1072,7 +1073,9 @@ uint16_t enemy_keep_distance_step(uint16_t object, uint16_t step_handlers);
 void enemy_keep_distance_back_off(uint16_t object);
 uint16_t enemy_keep_distance_close_in(uint16_t object, uint16_t step_handlers);
 void enemy_wait_while_target_down(uint16_t object, uint8_t step, uint16_t *p_step_handlers, uint32_t *p_left_caller);
+void CONSOLE_ORIGINAL(enemy_wait_while_target_down)(uint16_t object, uint8_t step, uint16_t *p_step_handlers, uint32_t *p_left_caller);
 void enemy_back_off(uint16_t object, uint8_t step, uint16_t *p_step_handlers, uint32_t *p_left_caller);
+void CONSOLE_ORIGINAL(enemy_back_off)(uint16_t object, uint8_t step, uint16_t *p_step_handlers, uint32_t *p_left_caller);
 void enemy_back_off_start(uint16_t object);
 uint16_t enemy_back_off_step(uint16_t object, uint16_t target);
 void enemy_wait_start(uint16_t object);
@@ -1561,6 +1564,7 @@ void ninja_jump_attack_land(uint16_t object, uint16_t z_speed);
 void ninja_rush_start(uint16_t object);
 void ninja_rush_run(uint16_t object);
 void ninja_rush_leap(uint16_t object);
+void CONSOLE_ORIGINAL(ninja_rush_leap)(uint16_t object);
 void ninja_rush_end(uint16_t object);
 void ninja_vanish_start(uint16_t object);
 void ninja_vanish_puff(uint16_t object);
@@ -2060,6 +2064,7 @@ uint16_t clown_on_ball_pause(uint16_t object);
 void clown_on_ball_pause_end(uint16_t object);
 void clown_on_ball_hop_away(uint16_t object);
 void clown_on_ball_hop(uint16_t object);
+void CONSOLE_ORIGINAL(clown_on_ball_hop)(uint16_t object);
 void orbit_offset(uint16_t angle_and_radius);
 
 /* objects/collisions.c: the hit checks: the players against the enemies, the child objects, list 1's objects and each other */

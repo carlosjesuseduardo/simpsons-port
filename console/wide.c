@@ -4,9 +4,9 @@
  *                 play and on every other screen, the layers' columns the game does not draw that far drawn from the
  *                 same maps, the players' boxes kept in the middle, and the objects coming in, going out and walking
  *                 past the wider screen's sides
- *    Version:     0.1.0
+ *    Version:     0.2.0
  *    Created:     13-11-2026
- *    Modified:    13-11-2026
+ *    Modified:    14-11-2026
  *    Author:      Sebastian Toyos
  *
  *    license:BSD-3-Clause
@@ -23,8 +23,11 @@
  *    draws a map's column as its scroll brings it 352 pixels past the screen's left edge (camera_scroll_layers'
  *    offset 0160), and a whole layer 352 pixels from it (its 44 columns: a stage's start); the console draws the
  *    columns the wider screen shows that the layers' rings do not hold (draw_side_columns), from the same map and its
- *    blocks: their tiles, and the floor map's cells for the camera's layer (the play's walls and floors, so the
- *    players and the enemies in the sides walk them as on the board), never past the map's ends. Where a side has no
+ *    blocks: their tiles, and the floor map's cells for the layer the game takes them from (the play's walls and
+ *    floors, so the players and the enemies in the sides walk them as on the board: the layer the game last drew whole
+ *    with them, as a stage's start draws its layer B while its camera is on layer A for its opening scene, or the
+ *    camera's once that changes), and that layer's past the right side as far as the ring has room (DRAWN_AHEAD, as the
+ *    board's floor is valid past its own right edge), never past the map's ends. Where a side has no
  *    map past the board's screen (a stage's start at its left, its end at its right), or no more of it than the
  *    cabinet ever shows (past where the stage's record stops the camera for its boss: stage 1's map goes on in a wall
  *    of blue bricks), the picture shows what there is and the rest at the other side, back to the middle as the scroll
@@ -40,10 +43,18 @@
  *    those that come from the left, past its left side), and an object goes out, stops, counts as on the screen and
  *    a player walks to the screen's edges as on the board, but by the wider screen's sides (enemy_remove_off_screen,
  *    remove_off_screen, stop_beyond_screen_edge, enemy_on_screen, player_check_motion, player_check_screen_edges:
- *    the same C with their limits moved). An object's x is the screen's: 40 at the board's left edge, 17F at its right.
+ *    the same C with their limits moved), and the enemies' moves 9 and 3 stop them past the wider screen's sides, not
+ *    in them (enemy_wait_while_target_down, enemy_back_off: 16 pixels past its sight, as the board's 40 and 17F are
+ *    past the cabinet's black edges). A spawn list read at once (a stage's or an area's start, the play's first frame
+ *    too) puts in where the board does what the cabinet shows (a scene's), and the goons that come in by themselves
+ *    from where the cabinet did not show them (under its black edges or past them: stage 1's first goon, waiting for
+ *    its opening scene to end, a player's report) as far past the wider screen's edges as they were past the
+ *    cabinet's. An object's x is the screen's: 40 at the board's left edge, 17F at its right.
  *
  *    For development, SIMPSONS_WIDE_DEBUG in the environment writes each frame's sides, the game's step, the layers'
- *    scrolls and rings and the stage record's entry to the standard error.
+ *    scrolls and rings, the stage record's entry and the objects in use to the standard error; --wide-check (the
+ *    executables') says each frame which side columns are not their map's and what the spawn list put in that the
+ *    wider screen showed and the cabinet did not.
  */
 #include "console_internal.h"
 
@@ -82,6 +93,8 @@ static const int k_views[WIDE_AUTO] = { SIMPSONS_VIDEO_WIDTH, 398, 496, 358 };  
 #define EDGE                16           /* the cabinet's black edges, the fixed layer's: the board's first and last 16 */
 #define MASK_TILE           0x3Fu
 #define OBJECT_LEFT         0x40         /* an object's x at the board's left edge */
+#define DRAWN_AHEAD         0x28         /* the floor drawn past the wider screen's right side, as far as the board's is
+                                            past its own (its new column 0160 past the screen's left edge: 0x1A0-0x1A7) */
 
 /* The game's steps that are a stage's play (4803: 2 stage 1, 4 stage 2, 6-7 stage 3, 8 stage 4, 9 stage 5, 11 stage
    6, 13 stage 7, 15 stage 8; the others: the stories, the two bonus stages, the ending) */
@@ -344,6 +357,17 @@ void draw_layer_columns(uint16_t layer_and_columns, uint16_t *p_layer_map, uint1
 	whole_layer_drawn(layer, x, columns);
 }
 
+/* The layer the floor map's cells are of: the one the game last drew whole with them (a stage's start: its layer B,
+   while its camera is on layer A for its opening scene, stage 1's), or the camera's once that changes (the game fills
+   them from the camera's layer as its scroll goes: draw_floor_map_column); -1, the camera's */
+static int floor_layer = -1;
+static int floor_camera_seen = -1;    /* (camera_main_layer as last seen) */
+
+static int floor_layer_now(void)
+{
+	return floor_layer >= 0 ? floor_layer : (camera_main_layer ? 1 : 0);
+}
+
 uint16_t draw_layer_columns_with_floor_map(uint16_t layer_and_columns)
 {
 	const int layer = (layer_and_columns >> 8) & 1;
@@ -352,6 +376,7 @@ uint16_t draw_layer_columns_with_floor_map(uint16_t layer_and_columns)
 	const uint16_t u = original_draw_layer_columns_with_floor_map(layer_and_columns);
 
 	whole_layer_drawn(layer, x, columns);
+	floor_layer = layer;
 	return u;
 }
 
@@ -433,7 +458,7 @@ static void draw_side_columns(int layer, const layer_map_area *map, int left, in
 	layer_ring *ring = &rings[layer];
 	const int x = layer_scroll_x(layer);
 	const int shown_first = x - left, shown_last = x + SIMPSONS_VIDEO_WIDTH - 1 + right;
-	const bool floor = layer == (camera_main_layer ? 1 : 0);
+	const bool floor = layer == floor_layer_now();
 
 	for (int column = ring->last + 1; column <= shown_last && column + TILE <= map->width; column += TILE)
 	{
@@ -451,6 +476,24 @@ static void draw_side_columns(int layer, const layer_map_area *map, int left, in
 		if (ring->last - ring->first >= RING)
 			ring->last = ring->first + RING - 1;
 	}
+	if (floor)
+	{
+		/* (and the camera's layer past the right side, as far as the ring has room for it with all the picture shows:
+		   the floor map's cells there, where the objects put in past the side walk in from. Past them the floor map
+		   holds another place's, which an enemy goes round as ground it cannot walk on: stage 1's first goon stayed
+		   there) */
+		const int room_last = (shown_first & ~(TILE - 1)) + RING - 1;
+
+		for (int column = ring->last + 1; column <= shown_last + DRAWN_AHEAD && column + TILE - 1 <= room_last
+			&& column + TILE <= map->width; column += TILE)
+		{
+			if (!draw_column(layer, map, column, floor, ring->y))
+				break;
+			ring->last = column + TILE - 1;
+			if (ring->last - ring->first >= RING)
+				ring->first = ring->last - (RING - 1);
+		}
+	}
 }
 
 /* A map no wider than the ring (stage 6's layer A: 512 pixels, which its scroll does not move): drawn whole in it, its
@@ -459,7 +502,7 @@ static void draw_whole_ring(int layer, const layer_map_area *map)
 {
 	layer_ring *ring = &rings[layer];
 	const uint16_t y = (uint16_t)layer_scroll_y(layer);
-	const bool floor = layer == (camera_main_layer ? 1 : 0);
+	const bool floor = layer == floor_layer_now();
 
 	if (edges_on(layer) && layer_rows_on)
 	{
@@ -627,6 +670,9 @@ void console_wide_frame(void)
 
 	if (game_step != last_step || game_mode != last_mode)
 		forget_rings();    /* (another step: its maps to come) */
+	if (floor_camera_seen >= 0 && (int)camera_main_layer != floor_camera_seen)
+		floor_layer = -1;    /* (the camera on another layer: the game's floor columns of it from now on) */
+	floor_camera_seen = camera_main_layer;
 	last_step = game_step;
 	last_mode = game_mode;
 	shown_drawn = shown_now;
@@ -698,6 +744,17 @@ void console_wide_frame(void)
 			(unsigned)(data < 0 ? 0 : rom16(STAGE_RECORDS_BANK, (uint16_t)(data + 1))),
 			data < 0 ? -1 : rom8(STAGE_RECORDS_BANK, (uint16_t)(data + 3)),
 			(unsigned)(data < 0 ? 0 : rom16(STAGE_RECORDS_BANK, (uint16_t)(data + 4))));
+		for (int number = 0; number < 33; number++)
+		{
+			const uint16_t object = (uint16_t)OBJECT_ADDRESS(number);
+
+			if (OBJECT(object)->flags)
+				fprintf(stderr, "  object %d: type %02X kind %02X x %04X y %04X x_speed %d behaviour %04X action %02X step %02X "
+					"vitality %02X\n", number, (unsigned)OBJECT(object)->type, (unsigned)OBJECT(object)->kind,
+					(unsigned)OBJECT(object)->x, (unsigned)OBJECT(object)->y, (int)OBJECT(object)->x_speed,
+					(unsigned)OBJECT(object)->behaviour, (unsigned)OBJECT(object)->action,
+					(unsigned)OBJECT(object)->action_step, (unsigned)OBJECT(object)->vitality);
+		}
 	}
 }
 
@@ -758,17 +815,196 @@ int wide_crop(const console_picture *frame)
 
 /* ---- the objects past the wider screen's sides ---- */
 
-/* The sides the game's play has now (the frame to be drawn next), 0 out of a stage's play */
-static void play_now(int *left, int *right)
+/* The picture's sides in the game's play now (the frame to be drawn next; a side may be less than none), 0 out of a
+   stage's play */
+static void play_sides_now(int *left, int *right)
 {
 	if (shown_now == SHOW_PLAY)
 	{
-		*left = MOST(wide_left_now, 0);    /* (a side less than none ends where the board's black edge did: the
-		                                      arcade's own limits there) */
-		*right = MOST(wide_right_now, 0);
+		*left = wide_left_now;
+		*right = wide_right_now;
 	}
 	else
 		*left = *right = 0;
+}
+
+/* Whether the play begins in this frame (its step's maps drawn whole: what_shows says so before the frame's end, where
+   console_wide_frame sets its sides), and the sides it comes with ('left', 'right': at once). Its frame is the board's
+   (play_now: none), but for the spawns it puts in out of the cabinet's sight (spawn_stage_objects) */
+static bool play_begins(int *left, int *right)
+{
+	if (shown_now == SHOW_PLAY || game_step != last_step || game_mode != last_mode || what_shows() != SHOW_PLAY)
+		return false;
+	play_sides(k_sides[wide_kind()], left, right);
+	return *left > 0 || *right > 0;
+}
+
+static void play_now(int *left, int *right)
+{
+	play_sides_now(left, right);
+	*left = MOST(*left, 0);    /* (a side less than none ends where the board's black edge did: the arcade's own
+	                              limits there) */
+	*right = MOST(*right, 0);
+}
+
+/* For checks (--wide-check): what the spawn list put in this frame, where it was put */
+#define SPAWNS_NOTED        16
+#define SIGHT_HALF          16           /* (an object's sprite, at each side of its x) */
+
+static struct
+{
+	uint8_t type, state;
+	int16_t x;
+	int side_left, side_right;
+} spawns_noted[SPAWNS_NOTED];
+static int spawns_noted_count;
+
+static void note_spawn(uint16_t object, int picture_left, int picture_right)
+{
+	if (spawns_noted_count >= SPAWNS_NOTED)
+		return;
+	spawns_noted[spawns_noted_count].type = OBJECT(object)->type;
+	spawns_noted[spawns_noted_count].state = OBJECT(object)->parameter;
+	spawns_noted[spawns_noted_count].x = (int16_t)OBJECT(object)->x;
+	spawns_noted[spawns_noted_count].side_left = picture_left;    /* (the picture's: a side may be less than none) */
+	spawns_noted[spawns_noted_count].side_right = picture_right;
+	spawns_noted_count++;
+}
+
+/* The spawns that come in by themselves from where they are put (the enemies' types, spawn_stage_objects' kind): the
+   goons that walk, run or float in and fight. Not what drives in or walks in for a time (the police car, E9: it would
+   stop past the side), nor what puts itself at the board's edge when it comes (stage 6's donuts, FD), nor what waits
+   at its place on the map (stage 3's ghost on its rope, 11; the bosses) */
+static bool comes_in_type(uint8_t type)
+{
+	switch (type)
+	{
+	case 0x00:    /* the plain goon (stage 1's at its start: Sebas, "hay un enemigo ahí fijo") */
+	case 0x01:    /* the goon with a hat */
+	case 0x02:    /* the fireman goon */
+	case 0x03:    /* the goon that grabs close */
+	case 0x08:    /* the goon with an umbrella floating down (where it lands, out of the cabinet's sight) */
+	case 0x0A:    /* the goon with an umbrella */
+	case 0x0C:    /* the striker goon */
+	case 0x0D:    /* the goon with a shovel */
+	case 0x0E:    /* the fat goon */
+	case 0x12:    /* the fat goon that throws */
+	case 0x15:    /* the goon walking in */
+	case 0x17:    /* the goon running in */
+	case 0x25:    /* the goon rushing in */
+	case 0x28:    /* the fat goon walking in */
+	case 0x29:    /* the goon with a shovel rushing in */
+	case 0x2A:    /* the goon with an umbrella rushing in */
+	case 0x2E:    /* the goon with a bomb running in */
+	case 0x34:    /* the striker goon rushing in */
+	case 0xE6:    /* the fat goon that grabs and body-slams */
+	case 0xEB:    /* the goon that keeps away */
+		return true;
+	}
+	return false;
+}
+
+#define OBJECT_RIGHT        0x17F        /* an object's x at the board's right edge */
+#define SPAWN_EDGE          0x190        /* where the game puts a spawn in as its scroll comes (the camera's 0150) */
+#define SPAWN_SLACK         8            /* (the scroll's steps past it in a frame) */
+
+/* A spawn put in at the right that the cabinet did not show (under its black edge or past it) but the wider screen
+   does: as far past the wider screen's edge as it was past the cabinet's, and no further than one the game puts in as
+   its scroll comes. That is a spawn list read at once (a stage's start, an area's): stage 1's goon waiting for its
+   opening scene to end just past the cabinet's edge, standing in WIDE's right side (a player's report) */
+static uint16_t past_right_side(uint16_t x, int side_right, int picture_left, int picture_right)
+{
+	const int screen_x = (int16_t)x, more = picture_right + fixed_first;
+
+	/* (and on the floor drawn past the side: draw_side_columns, as far as the ring has room; in 20:9 at a stage's start
+	   a few pixels of it may show at the picture's edge) */
+	const int floor_last = LEAST(OBJECT_RIGHT + picture_right + DRAWN_AHEAD, OBJECT_LEFT - picture_left + RING - 1 - TILE)
+		- TILE;
+
+	if (screen_x - SIGHT_HALF < OBJECT_RIGHT - fixed_first || screen_x >= SPAWN_EDGE + side_right - SPAWN_SLACK
+		|| more <= 0)
+		return x;    /* (in the cabinet's sight, or put in as the scroll comes: past the side already) */
+	return (uint16_t)MOST(screen_x, LEAST(LEAST(screen_x, SPAWN_EDGE) + more, floor_last));
+}
+
+#define SPAWN_LEFT          0x160        /* how far left of its place a spawn of the left is put (its record's bit 7) */
+
+/* A spawn put in at the left: one due before the board's edge would bring it (by the wider right side, as the scroll
+   comes) as far past the wider screen's left side as the board's past its own; one the board puts in too (a spawn
+   list read at once: an area's start), where the board has it if the cabinet shows it there (a scene's), else as far
+   past the wider screen's edge as it was past the cabinet's */
+static uint16_t past_left_side(uint16_t placed, int side_left, int side_right, int picture_left)
+{
+	const int placed_x = (int16_t)placed, board_x = placed_x - SPAWN_LEFT, more = picture_left + fixed_first;
+
+	if (in_cemetery != 0u)
+		return (uint16_t)(board_x - side_left);
+	if (placed_x > SPAWN_EDGE)
+		return (uint16_t)(board_x - side_left - side_right);
+	if (board_x + SIGHT_HALF > OBJECT_LEFT + fixed_first || more <= 0)
+		return (uint16_t)board_x;
+	return (uint16_t)(board_x - more);
+}
+
+#define OBJECTS             33
+#define FIRST_ENEMY         14           /* (the objects the enemies' lists run: object_lists.c) */
+
+/* The play's first frame (play_begins): the board's spawns, then those that come in by themselves that the cabinet
+   does not show (under its black edges or past them) moved out of the wider screen's sight, as its sides come at once
+   (stage 1's goon, waiting for its opening scene to end just past the cabinet's right edge: a player's report, Sebas:
+   "La posición inicial fuera del 4:3"). The scene's own, the cabinet's to see, where the board has them */
+static void spawn_as_play_begins(int left, int right)
+{
+	bool used[OBJECTS];
+
+	for (int number = FIRST_ENEMY; number < OBJECTS; number++)
+		used[number] = OBJECT(OBJECT_ADDRESS(number))->flags != 0u;
+	original_spawn_stage_objects();
+	for (int number = FIRST_ENEMY; number < OBJECTS; number++)
+	{
+		const uint16_t object = (uint16_t)OBJECT_ADDRESS(number);
+		const int x = (int16_t)OBJECT(object)->x;
+
+		if (used[number] || OBJECT(object)->flags == 0u)
+			continue;
+		if (comes_in_type(OBJECT(object)->type))
+		{
+			if (x - SIGHT_HALF >= OBJECT_RIGHT - fixed_first)
+				OBJECT(object)->x = past_right_side((uint16_t)x, MOST(right, 0), left, right);
+			else if (x + SIGHT_HALF <= OBJECT_LEFT + fixed_first && left + fixed_first > 0)
+				OBJECT(object)->x = (uint16_t)(x - left - fixed_first);
+		}
+		note_spawn(object, left, right);
+	}
+}
+
+/* For checks (--wide-check): what the spawn list put in since the last look that the wider screen showed where it
+   was put and the cabinet did not (past its black edges: the board's first and last 16 columns); how many */
+int console_wide_spawn_check(char *text, size_t size)
+{
+	int shown = 0, used = 0;
+
+	if (size)
+		text[0] = 0;
+	for (int index = 0; index < spawns_noted_count; index++)
+	{
+		const int x = spawns_noted[index].x;
+		const bool cabinet = x + SIGHT_HALF > OBJECT_LEFT + fixed_first
+			&& x - SIGHT_HALF < OBJECT_LEFT + SIMPSONS_VIDEO_WIDTH - 1 - fixed_first;
+		const bool wide = x + SIGHT_HALF > OBJECT_LEFT - spawns_noted[index].side_left
+			&& x - SIGHT_HALF < OBJECT_LEFT + SIMPSONS_VIDEO_WIDTH - 1 + spawns_noted[index].side_right;
+
+		if (wide && !cabinet)
+		{
+			shown++;
+			if (used >= 0 && (size_t)used < size)
+				used += snprintf(text + used, size - (size_t)used, "type %02X (state %02X) at x %04X, sides %d %d; ",
+					(unsigned)spawns_noted[index].type, (unsigned)spawns_noted[index].state, (unsigned)(uint16_t)x,
+					spawns_noted[index].side_left, spawns_noted[index].side_right);
+		}
+	}
+	spawns_noted_count = 0;
+	return shown;
 }
 
 /* The game's spawn_stage_objects (objects/spawning.c), the spawns due as far past the wider screen's right side as
@@ -780,12 +1016,17 @@ void spawn_stage_objects(void)
 	uint16_t spawn = 0, spawned = 0;
 	uint8_t flags = 0, level = 0, flags_2 = 0, kind = 0, state = 0, flags_3 = 0, height_steps = 0, depth = 0;
 	uint16_t enemies_speed = 0, camera_position = 0, spawn_edge = 0, scroll_position = 0, spawn_place = 0, compared_scroll = 0, spawn_stage_x = 0, camera_offset = 0, spawn_screen_x = 0, placed_x = 0, left_side_x = 0, signed_steps = 0, height_pixels = 0, negated_height = 0, height_on_screen = 0, spawn_y = 0;
-	int side_left, side_right;
+	int side_left, side_right, picture_left, picture_right;
 
-	play_now(&side_left, &side_right);
+	play_sides_now(&picture_left, &picture_right);
+	side_left = MOST(picture_left, 0);
+	side_right = MOST(picture_right, 0);
 	if (!side_left && !side_right)
 	{
-		original_spawn_stage_objects();
+		if (in_cemetery == 0u && play_begins(&picture_left, &picture_right))
+			spawn_as_play_begins(picture_left, picture_right);
+		else
+			original_spawn_stage_objects();
 		return;
 	}
 	enemy_speed = enemy_speeds_by_rank[(int8_t)rank];
@@ -864,10 +1105,12 @@ void spawn_stage_objects(void)
 		if ((int8_t)flags_3 < 0)
 		{
 			placed_x = OBJECT(spawned)->x;
-			left_side_x = placed_x - 0x160u - (uint16_t)(side_left + (in_cemetery == 0u ? side_right : 0));    /* (WIDE:
-				past its left side, from the right side's distance) */
+			left_side_x = past_left_side(placed_x, side_left, side_right, picture_left);    /* (WIDE: past its left
+				side, from the right side's distance; where the board has it if the cabinet shows it there) */
 			OBJECT(spawned)->x = left_side_x;
 		}
+		else if (in_cemetery == 0u && comes_in_type(kind))
+			OBJECT(spawned)->x = past_right_side(spawn_screen_x, side_right, picture_left, picture_right);    /* (WIDE: out of its sight) */
 		OBJECT(spawned)->x_fraction = 0u;
 		height_steps = SPAWN(spawn)->y;
 		signed_steps = (int8_t)height_steps;
@@ -884,6 +1127,7 @@ void spawn_stage_objects(void)
 		OBJECT(spawned)->floor_z = spawn_height;
 		OBJECT(spawned)->carried = 0u;
 		OBJECT(spawned)->blocked = 0u;
+		note_spawn(spawned, picture_left, picture_right);
 		spawn_next = spawn + 8u;
 	}
 }
@@ -964,6 +1208,566 @@ uint32_t enemy_on_screen(uint16_t object)
 		return original_enemy_on_screen(object);
 	screen_x = (int16_t)OBJECT(object)->x;
 	return screen_x >= 0x50 - side_left && screen_x <= 0x16F + side_right;
+}
+
+/* Whether an object at screen x 'x' is past a pair of the game's limits near the board's edges ('left' and 'right',
+   as the enemies' moves' 40 and 17F, 16 pixels past the cabinet's sight, its black edges): those moved as far past the
+   wider screen's sides (where the picture has none, the board's). beyond_move_limits: the enemies' moves 9 and 3 */
+static bool beyond_limits(int x, int left, int right)
+{
+	int picture_left, picture_right;
+
+	play_sides_now(&picture_left, &picture_right);
+	return x < LEAST(left, left - picture_left - fixed_first) || x > MOST(right, right + picture_right + fixed_first);
+}
+
+static bool beyond_move_limits(int x)
+{
+	return beyond_limits(x, OBJECT_LEFT, OBJECT_RIGHT);
+}
+
+/* The game's enemy_wait_while_target_down (enemies/enemy_moves.c, Move 9): stopped past the wider screen's sides,
+   not in them (a player's report: an enemy standing still in a side till it came to the board's 320) */
+void enemy_wait_while_target_down(uint16_t object, uint8_t step, uint16_t *p_step_handlers, uint32_t *p_left_caller)
+{
+	uint16_t step_handlers = 0;
+	int16_t enemy_x = 0;
+	int side_left, side_right;
+
+	play_now(&side_left, &side_right);
+	if (!side_left && !side_right)
+	{
+		original_enemy_wait_while_target_down(object, step, p_step_handlers, p_left_caller);
+		return;
+	}
+	step_handlers = enemy_wait_while_target_down_steps_ADDRESS;
+	step = (uint8_t)((uint32_t)step << 1);
+	switch ((int8_t)step)
+	{
+	case 0:
+		enemy_wait_start(object);
+		break;
+	case 2:
+	case 8:
+		step_handlers = enemy_wait_for_target_to_stand(object);
+		break;
+	case 4:
+		enemy_back_off_start(object);
+		break;
+	case 6:
+		step_handlers = enemy_back_off_step(object, step_handlers);
+		break;
+	case 10:
+		enemy_step_toward_target_start(object);
+		break;
+	case 12:
+		enemy_step_toward_target_step(object);
+		break;
+	case 14:
+		step_handlers = enemy_circle_target_start(object, step_handlers);
+		break;
+	case 16:
+		step_handlers = enemy_circle_target_step(object, step_handlers);
+		break;
+	case 18:
+		step_handlers = enemy_wander_start(object, step_handlers);
+		break;
+	case 20:
+		step_handlers = enemy_wander_walk(object, step_handlers);
+		break;
+	case 22:
+		step_handlers = enemy_wander_rest(object, step_handlers);
+		break;
+	case 24:
+		enemy_rush_start(object);
+		break;
+	case 26:
+		enemy_rush_step(object);
+		break;
+	case 28:
+		enemy_rush_slow_down(object);
+		break;
+	case -14:
+	case 30:
+		enemy_line_up_start(object);
+		break;
+	case -12:
+	case 32:
+		enemy_line_up_in_depth(object);
+		break;
+	case 34:
+		enemy_pace_start(object);
+		break;
+	case 36:
+		enemy_pace_step(object);
+		break;
+	case 38:
+		enemy_pace_end(object);
+		break;
+	case -98:
+		enemy_climb_up_front(object, step, &step_handlers, p_left_caller);
+		break;
+	case -96:
+		enemy_climb_up_back(object, step, &step_handlers, p_left_caller);
+		break;
+	case -94:
+		enemy_climb_up_left(object, step, &step_handlers, p_left_caller);
+		break;
+	case -92:
+		enemy_climb_up_right(object, step, &step_handlers, p_left_caller);
+		break;
+	case -90:
+		enemy_hop_down_front(object, step, &step_handlers, p_left_caller);
+		break;
+	case -88:
+		enemy_hop_down_back(object, step, &step_handlers, p_left_caller);
+		break;
+	case -86:
+		enemy_hop_down_left(object, step, &step_handlers, p_left_caller);
+		break;
+	case -84:
+		enemy_hop_down_right(object, step, &step_handlers, p_left_caller);
+		break;
+	case -82:
+		step_handlers = enemy_climb_up_front_start(object);
+		break;
+	case -80:
+	case -56:
+		enemy_move_front_until_landed(object);
+		break;
+	case -78:
+	case -72:
+	case -66:
+	case -60:
+	case -54:
+	case -48:
+	case -42:
+	case -36:
+		enemy_back_to_thinking_after_wait(object);
+		break;
+	case -76:
+		step_handlers = enemy_climb_up_back_start(object);
+		break;
+	case -74:
+	case -50:
+		enemy_move_back_until_landed(object);
+		break;
+	case -70:
+		step_handlers = enemy_climb_up_left_start(object);
+		break;
+	case -68:
+	case -44:
+		enemy_move_left_until_landed(object);
+		break;
+	case -64:
+		step_handlers = enemy_climb_up_right_start(object);
+		break;
+	case -62:
+	case -38:
+		enemy_move_right_until_landed(object);
+		break;
+	case -58:
+	case -46:
+	case -40:
+		enemy_hop_start(object);
+		break;
+	case -52:
+		enemy_hop_back_start(object);
+		break;
+	case -34:
+		step_handlers = enemy_get_around_start(object, step_handlers);
+		break;
+	case -32:
+		step_handlers = enemy_get_around_step(object, step_handlers);
+		break;
+	case -30:
+		enemy_go_straight(object);
+		break;
+	case -28:
+	case -18:
+		enemy_walk_start_in_turn(object);
+		break;
+	case -26:
+		step_handlers = enemy_walk_to_target_side_step(object);
+		break;
+	case -24:
+		enemy_line_up_near_start(object);
+		break;
+	case -22:
+		enemy_line_up_near_in_depth(object);
+		break;
+	case -20:
+		step_handlers = enemy_line_up_near_in_x(object, step_handlers);
+		break;
+	case -16:
+		step_handlers = enemy_walk_to_target_step(object);
+		break;
+	case -10:
+		step_handlers = enemy_line_up_in_x(object, step_handlers);
+		break;
+	case -8:
+		enemy_keep_distance_start(object);
+		break;
+	case -6:
+		step_handlers = enemy_keep_distance_step(object, step_handlers);
+		break;
+	case -4:
+		enemy_keep_distance_back_off(object);
+		break;
+	case -2:
+		step_handlers = enemy_keep_distance_close_in(object, step_handlers);
+		break;
+	}
+	enemy_x = (int16_t)OBJECT(object)->x;
+	if (beyond_move_limits(enemy_x))    /* (WIDE: its sides) */
+	{
+		OBJECT(object)->x_speed = 0;
+		OBJECT(object)->y_speed = 0;
+	}
+	*p_step_handlers = step_handlers;
+}
+
+/* The game's enemy_back_off (enemies/enemy_moves.c, Move 3): stopped past the wider screen's sides, not in them */
+void enemy_back_off(uint16_t object, uint8_t step, uint16_t *p_step_handlers, uint32_t *p_left_caller)
+{
+	uint16_t step_handlers = 0;
+	int16_t enemy_x = 0;
+	int side_left, side_right;
+
+	play_now(&side_left, &side_right);
+	if (!side_left && !side_right)
+	{
+		original_enemy_back_off(object, step, p_step_handlers, p_left_caller);
+		return;
+	}
+	step_handlers = enemy_back_off_steps_ADDRESS;
+	step = (uint8_t)((uint32_t)step << 1);
+	switch ((int8_t)step)
+	{
+	case 0:
+		enemy_back_off_start(object);
+		break;
+	case 2:
+		step_handlers = enemy_back_off_step(object, step_handlers);
+		break;
+	case -2:
+	case 4:
+		step_handlers = enemy_wait_for_target_to_stand(object);
+		break;
+	case 6:
+		enemy_step_toward_target_start(object);
+		break;
+	case 8:
+		enemy_step_toward_target_step(object);
+		break;
+	case 10:
+		step_handlers = enemy_circle_target_start(object, step_handlers);
+		break;
+	case 12:
+		step_handlers = enemy_circle_target_step(object, step_handlers);
+		break;
+	case 14:
+		step_handlers = enemy_wander_start(object, step_handlers);
+		break;
+	case 16:
+		step_handlers = enemy_wander_walk(object, step_handlers);
+		break;
+	case 18:
+		step_handlers = enemy_wander_rest(object, step_handlers);
+		break;
+	case 20:
+		enemy_rush_start(object);
+		break;
+	case 22:
+		enemy_rush_step(object);
+		break;
+	case 24:
+		enemy_rush_slow_down(object);
+		break;
+	case -18:
+	case 26:
+		enemy_line_up_start(object);
+		break;
+	case -16:
+	case 28:
+		enemy_line_up_in_depth(object);
+		break;
+	case 30:
+		enemy_pace_start(object);
+		break;
+	case 32:
+		enemy_pace_step(object);
+		break;
+	case 34:
+		enemy_pace_end(object);
+		break;
+	case -102:
+		enemy_climb_up_front(object, step, &step_handlers, p_left_caller);
+		break;
+	case -100:
+		enemy_climb_up_back(object, step, &step_handlers, p_left_caller);
+		break;
+	case -98:
+		enemy_climb_up_left(object, step, &step_handlers, p_left_caller);
+		break;
+	case -96:
+		enemy_climb_up_right(object, step, &step_handlers, p_left_caller);
+		break;
+	case -94:
+		enemy_hop_down_front(object, step, &step_handlers, p_left_caller);
+		break;
+	case -92:
+		enemy_hop_down_back(object, step, &step_handlers, p_left_caller);
+		break;
+	case -90:
+		enemy_hop_down_left(object, step, &step_handlers, p_left_caller);
+		break;
+	case -88:
+		enemy_hop_down_right(object, step, &step_handlers, p_left_caller);
+		break;
+	case -86:
+		step_handlers = enemy_climb_up_front_start(object);
+		break;
+	case -84:
+	case -60:
+		enemy_move_front_until_landed(object);
+		break;
+	case -82:
+	case -76:
+	case -70:
+	case -64:
+	case -58:
+	case -52:
+	case -46:
+	case -40:
+		enemy_back_to_thinking_after_wait(object);
+		break;
+	case -80:
+		step_handlers = enemy_climb_up_back_start(object);
+		break;
+	case -78:
+	case -54:
+		enemy_move_back_until_landed(object);
+		break;
+	case -74:
+		step_handlers = enemy_climb_up_left_start(object);
+		break;
+	case -72:
+	case -48:
+		enemy_move_left_until_landed(object);
+		break;
+	case -68:
+		step_handlers = enemy_climb_up_right_start(object);
+		break;
+	case -66:
+	case -42:
+		enemy_move_right_until_landed(object);
+		break;
+	case -62:
+	case -50:
+	case -44:
+		enemy_hop_start(object);
+		break;
+	case -56:
+		enemy_hop_back_start(object);
+		break;
+	case -38:
+		step_handlers = enemy_get_around_start(object, step_handlers);
+		break;
+	case -36:
+		step_handlers = enemy_get_around_step(object, step_handlers);
+		break;
+	case -34:
+		enemy_go_straight(object);
+		break;
+	case -32:
+	case -22:
+		enemy_walk_start_in_turn(object);
+		break;
+	case -30:
+		step_handlers = enemy_walk_to_target_side_step(object);
+		break;
+	case -28:
+		enemy_line_up_near_start(object);
+		break;
+	case -26:
+		enemy_line_up_near_in_depth(object);
+		break;
+	case -24:
+		step_handlers = enemy_line_up_near_in_x(object, step_handlers);
+		break;
+	case -20:
+		step_handlers = enemy_walk_to_target_step(object);
+		break;
+	case -14:
+		step_handlers = enemy_line_up_in_x(object, step_handlers);
+		break;
+	case -12:
+		enemy_keep_distance_start(object);
+		break;
+	case -10:
+		step_handlers = enemy_keep_distance_step(object, step_handlers);
+		break;
+	case -8:
+		enemy_keep_distance_back_off(object);
+		break;
+	case -6:
+		step_handlers = enemy_keep_distance_close_in(object, step_handlers);
+		break;
+	case -4:
+		enemy_wait_start(object);
+		break;
+	}
+	enemy_x = (int16_t)OBJECT(object)->x;
+	if (beyond_move_limits(enemy_x))    /* (WIDE: its sides) */
+	{
+		OBJECT(object)->x_speed = 0;
+		OBJECT(object)->y_speed = 0;
+	}
+	*p_step_handlers = step_handlers;
+}
+
+/* The game's ninja_rush_leap (enemies/ninja.c): the leaping ninja bounces once off the wider screen's sides, not off
+   the board's edges in their sight (stage 7's ninjas bounced 48 pixels in from the picture's edge in 16:9) */
+void ninja_rush_leap(uint16_t object)
+{
+	uint32_t landed = 0;
+	uint8_t bounced = 0, bounced_2 = 0;
+	uint16_t z_speed = 0, x_speed = 0;
+	int16_t ninja_x = 0;
+	int side_left, side_right;
+
+	play_now(&side_left, &side_right);
+	if (!side_left && !side_right)
+	{
+		original_ninja_rush_leap(object);
+		return;
+	}
+	z_speed = OBJECT(object)->z_speed;
+	OBJECT(object)->z_speed = z_speed - 0x20u;
+	landed = vector_check_landing(object);
+	if (landed)
+	{
+		OBJECT(object)->x_speed = 0;
+		OBJECT(object)->action = 0x2Bu;
+		OBJECT(object)->action_step = 0u;
+		leftover_y = ninja_body_box_ADDRESS;
+		vector_set_hit_box(object);
+		return;
+	}
+	bounced = OBJECT(object)->ninja.bounced;
+	if (bounced == 0u)
+	{
+		ninja_x = (int16_t)OBJECT(object)->x;
+		if (beyond_limits(ninja_x, 0x48, 0x177))    /* (WIDE: its sides) */
+		{
+			x_speed = OBJECT(object)->x_speed;
+			OBJECT(object)->x_speed = 0u - x_speed;
+			OBJECT(object)->z_speed = 0x200;
+			OBJECT(object)->animation = 0x84u;
+			leftover_y = ninja_jump_attack_dive_box_ADDRESS;
+			vector_set_hit_box(object);
+			bounced_2 = OBJECT(object)->ninja.bounced;
+			OBJECT(object)->ninja.bounced = bounced_2 + 1u;
+			face_movement(object);
+			return;
+		}
+	}
+}
+
+/* The game's clown_on_ball_hop (objects/clown_on_ball.c): the clown on his ball hops on in the wider screen's sides,
+   stopped past them (stage 2's stopped in the picture's right side, hopping where he was) */
+void clown_on_ball_hop(uint16_t object)
+{
+	uint32_t landed = 0;
+	uint16_t ignored16 = 0;
+	uint8_t hops_left = 0;
+	int16_t clown_x = 0;
+	int side_left, side_right;
+
+	play_now(&side_left, &side_right);
+	if (!side_left && !side_right)
+	{
+		original_clown_on_ball_hop(object);
+		return;
+	}
+	vector_apply_gravity(object, &ignored16, &landed);
+	if (landed == 0u)
+	{
+		clown_x = (int16_t)OBJECT(object)->x;
+		if (beyond_move_limits(clown_x))    /* (WIDE: its sides) */
+			OBJECT(object)->x_speed = 0;
+		return;
+	}
+	hops_left = OBJECT(object)->clown_on_ball.hops_left;
+	OBJECT(object)->clown_on_ball.hops_left = hops_left - 1u;
+	if (hops_left == 1u)
+	{
+		OBJECT(object)->state = 2u;
+		OBJECT(object)->timer = 0u;
+		return;
+	}
+	OBJECT(object)->z_speed = 0x400;
+	clown_x = (int16_t)OBJECT(object)->x;
+	if (beyond_move_limits(clown_x))    /* (WIDE: its sides) */
+		OBJECT(object)->x_speed = 0;
+}
+
+/* The game's krusty_balloon_fly_up (bosses/krusty_balloon.c): Krusty's balloon, knocked up, bounces off the wider
+   screen's sides (stage 2's boss bounced off the board's left edge, 112 pixels in from the picture's in 16:9) */
+void krusty_balloon_fly_up(uint16_t object)
+{
+	uint8_t vitality = 0, step = 0, shadow_player = 0;
+	uint16_t z = 0, x_speed = 0, reversed_x_speed = 0, hit_by = 0;
+	int16_t screen_x = 0;
+	int side_left, side_right;
+
+	play_now(&side_left, &side_right);
+	if (!side_left && !side_right)
+	{
+		original_krusty_balloon_fly_up(object);
+		return;
+	}
+	z = OBJECT(object)->z;
+	if ((int16_t)z < 0x80)
+	{
+		screen_x = (int16_t)OBJECT(object)->x;
+		if (beyond_move_limits(screen_x))    /* (WIDE: its sides) */
+		{
+			x_speed = OBJECT(object)->x_speed;
+			reversed_x_speed = 0u - x_speed;
+			OBJECT(object)->x_speed = reversed_x_speed;
+			return;
+		}
+		return;
+	}
+	OBJECT(object)->x_speed = 0;
+	OBJECT(object)->z_speed = 0;
+	vitality = OBJECT(object)->vitality;
+	if (krusty_balloon_beaten_health_by_players[(int8_t)((uint8_t)(player_count - 1u))] < vitality)
+	{
+		step = OBJECT(object)->krusty_balloon.step;
+		OBJECT(object)->krusty_balloon.step = step + 1u;
+		screen_x = (int16_t)OBJECT(object)->x;
+		if (beyond_move_limits(screen_x))    /* (WIDE: its sides) */
+		{
+			x_speed = OBJECT(object)->x_speed;
+			reversed_x_speed = 0u - x_speed;
+			OBJECT(object)->x_speed = reversed_x_speed;
+			return;
+		}
+		return;
+	}
+	OBJECT(object)->x_speed = 0;
+	OBJECT(object)->y_speed = 0;
+	OBJECT(object)->z_speed = 0;
+	hit_by = OBJECT(object)->hit_by;
+	shadow_player = OBJECT(hit_by)->shadow_player;
+	OBJECT(object)->points = shadow_player & ~0xFu;
+	OBJECT(object)->vitality = 0u;
+	OBJECT(object)->state = 0xFDu;
+	OBJECT(object)->krusty_balloon.step = 0u;
+	OBJECT(object)->krusty_balloon.squash_step = 0u;
 }
 
 /* ---- the players at the wider screen's edges ---- */
@@ -1295,6 +2099,7 @@ void wide_power_on(void)
 	last_step = last_mode = 0xFFu;
 	shown_now = shown_drawn = SHOW_BOARD;
 	wide_left_now = wide_right_now = 0;
+	floor_layer = floor_camera_seen = -1;
 }
 
 /* ---- a save state's part (states.c) ---- */
@@ -1309,6 +2114,8 @@ void wide_state(simpsons_state *state)
 
 	simpsons_state_part(state, "wide");
 	simpsons_state_bytes(state, rings, sizeof(rings));
+	simpsons_state_bytes(state, &floor_layer, sizeof(floor_layer));
+	simpsons_state_bytes(state, &floor_camera_seen, sizeof(floor_camera_seen));
 	simpsons_state_bytes(state, &fixed_first, sizeof(fixed_first));
 	simpsons_state_bytes(state, &fixed_last, sizeof(fixed_last));
 	simpsons_state_bytes(state, &last_step, sizeof(last_step));

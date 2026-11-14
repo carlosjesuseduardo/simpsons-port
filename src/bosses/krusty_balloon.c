@@ -3,7 +3,7 @@
  *    Description: the krusty balloon (stage 2's boss) and what it throws
  *    Version:     0.1.0
  *    Created:     06-11-2026
- *    Modified:    11-11-2026
+ *    Modified:    14-11-2026
  *    Author:      Sebastian Toyos
  *
  *    The Simpsons (arcade, Konami 1991): the game's 053248 program decompiled into C by
@@ -647,7 +647,7 @@ uint16_t krusty_balloon_knocked_up(uint16_t object)
 
 /* Knocked up, step 0: bounces off the screen's sides until it is 80 high; there it stops and is beaten
    when its health is at krusty_balloon_beaten_health_by_players or below, else goes on. */
-void krusty_balloon_fly_up(uint16_t object)
+void CONSOLE_ORIGINAL(krusty_balloon_fly_up)(uint16_t object)
 {
 	uint8_t x_high = 0, x_low = 0;
 	uint8_t vitality = 0, step = 0, shadow_player = 0;

@@ -261,6 +261,17 @@ if(SIMPSONS_DECOMPILED AND SIMPSONS_CONSOLE_SOURCES)
 	# (its pack's version: the same layout and the same src/table.c as The Simpsons Arcade Game's, so the same pack)
 	simpsons_add_assets_pack(simpsons_assets_pack_console simpsons_console_program)
 	target_link_libraries(simpsons_console_game PUBLIC simpsons_assets_pack_console)
+	# simpsons_console_headless: The Simpsons Mr. Plow Edition with no window, for quick checks (ports/headless/main.c:
+	# its menus' actions, WIDE, its frames as pictures, and it ends at --frames; as tmnt-port's tmnt_console_headless),
+	# its letters' font.bmp beside it
+	if(NOT SIMPSONS_DEVICE)
+		add_executable(simpsons_console_headless ports/headless/main.c)
+		target_link_libraries(simpsons_console_headless PRIVATE simpsons_console_game)
+		simpsons_game_stack(simpsons_console_headless)
+		add_custom_command(TARGET simpsons_console_headless POST_BUILD
+			COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_SOURCE_DIR}/ports/sdl2/font/font.bmp
+				$<TARGET_FILE_DIR:simpsons_console_headless>)
+	endif()
 	# MULTIPLAYER, the LAN game (console/PLAN.md, 11): arcade-lan, a repository of its own (lan/, or ARCADE_LAN_DIR
 	# where it is), as tmnt-port's; without it the LAN page says NO NETWORK. iOS refuses broadcasts to an app without
 	# Apple's multicast entitlement: the rooms there found by the library's SEEKs and sweeps (ARCADE_LAN_NO_BROADCAST)

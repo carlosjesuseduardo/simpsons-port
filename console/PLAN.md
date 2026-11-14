@@ -482,3 +482,51 @@ keeps from 12 to 19. Every change the console makes is checked with the console'
   to-do"): RUN-AHEAD, the players' boxes at the edges, a window across two screens, WIDE 32:9 after the chip-agnostic
   port, what the game does not use, new stages from a player's ideas, and the scaling filters with the GPU's picture
   once the decomp is at 100 %.
+- **14-11-2026, WIDE, stage 1's goon at its start** (a player's report; Sebas: "Primer nivel, cuando empieza, hay un
+  enemigo ahí fijo y después desaparecen en los 4:3", "El error parece q es al inicio. La posición inicial fuera del
+  4:3"; a session of its own): in 16:9, 20:9 and 16:10 a goon stood still in the picture's right side through stage
+  1's opening scene, then walked in.
+  - **simpsons_console_headless** (Sebas: "Hace un headless para probar rápido"): ports/headless/main.c with
+    SIMPSONS_CONSOLE, as tmnt-port's tmnt_console_headless: `--actions` (the window's names: up ... start, pause,
+    dump), `--wide`, `--wide-check`, `--arcade-start`, `--video-dump` with the console's picture over the frames, the
+    hashes, `--dump`, and `--frames` ending it; not on the devices. 1800 frames in some 4 s. Without a script the
+    players' controls are none each frame (the board holds what the console put there: read back, the attack was held
+    for ever and no story was skipped).
+  - The cause: the goon (type 00) the spawn list puts in at the play's first frame (frame 1495 by the menu: the list
+    read at once) at the screen's x 0180, waiting for the scene to end: on the board under the cabinet's black edge
+    (its sight ends at 016F), in WIDE in the right side. It was put in before WIDE's sides came (they come at the
+    frame's end), so as the board puts it. Moved past the side, it went round and round there (move 13, ground it
+    cannot walk on): the console drew the sides' floor map cells from the camera's layer (A in the opening scene), but
+    the game draws stage 1's floor from layer B (draw_layer_columns_with_floor_map, 012C): walls in the right side
+    while the scene played, for the players too.
+  - The fix (wide.c): the sides' floor from the layer the game last drew whole with it, or the camera's once that
+    changes (floor_layer, in the state), and past the right side as far as the ring has room with what the picture
+    shows (DRAWN_AHEAD, 0x28: the board's is valid past its own right edge, its new column 0160 past the left one).
+    The play's first frame is the board's, but for the spawns it puts in (spawn_as_play_begins). A spawn list read at
+    once puts in where the board does what the cabinet shows (a scene's), and the goons that come in by themselves
+    (comes_in_type: 00-03, 08, 0A, 0C-0E, 12, 15, 17, 25, 28-2A, 2E, 34, E6, EB) that the cabinet did not show as far
+    past the wider screen's edges as they were past its sight (past_right_side, past_left_side; no further than the
+    floor drawn: in 20:9 at a stage's start some 16 pixels of them show at the picture's edge, the ring's 512 holding
+    the 496 shown). Before, the WIDE path moved every spawn of the left by both sides, a scene's too: with the first
+    frame in it, stage 1's opening lost Grandpa, Patty and Selma, Smithers and his goons.
+  - The enemies' moves 9 and 3 (enemy_wait_while_target_down, enemy_back_off, console/replaced.txt) stop an enemy
+    past the wider screen's sides, 16 pixels past its sight as the board's 40 and 17F are past the cabinet's; and, as
+    the session's brief asked to look at: ninja_rush_leap (stage 7's leaping ninjas bounced at 0176-0177 and 0042,
+    48 pixels in from the picture's edge in 16:9), clown_on_ball_hop (stage 2's clown stopped in the right side,
+    hopping where he was) and krusty_balloon_fly_up (Krusty's balloon, knocked up, bounced off the board's left edge
+    112 pixels in from the picture's) with the same limits moved. tools/decompile.py with the new replaced.txt:
+    src/ as written (game.h and four files: CONSOLE_ORIGINAL).
+  - Checked (the headless): stage 1's start by the menu in 16:9, 20:9 and 16:10, the opening scene whole as in 4:3
+    and the right side empty till it ends, the goon (at 01F0, 022F, 01D0) walking in and fighting; the ninjas'
+    bounces at 01B6 (and at 0176 where the right side is less than none, as the board), no balloon bounce at the
+    board's edge. `--wide-check` (now also the spawns put in that the wider screen shows and the cabinet did not) on
+    the eight stages' scripts in 16:9 and 20:9: no side column but the map's but stage 7's end (the 128 known), and
+    in sight only what is left below. WIDE OFF: the 13 scripts' state hashes the same as before the change frame by
+    frame (the console's window, `--arcade-start`); The Simpsons Arcade's 25 scenarios identical, the static analysis
+    43056 of 43056; rom_in_executables none in the four executables (the console's headless too); the Switch's two
+    games (devkitPro, 0 warnings).
+  - Left, in WIDE's sight as they are put in: stage 1's police car (E9, driving in by a timer: moved it would stop past
+    the side) and what comes with it (F8), stage 6's donuts (FD: they put themselves at 0180 when they walk in) and its
+    flying saxophone (FC, leaping in from the front), stage 3's ghost on its rope (11, hanging above), a goon from the
+    side (3F) at the board's left edge where the picture has no left side, stage 7's ninja (32) at 0180 and kind 0F;
+    and a spawn put in as the scroll comes at a camera's stop (the right side 0): a few pixels of it.

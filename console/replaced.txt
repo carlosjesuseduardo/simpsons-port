@@ -13,6 +13,11 @@ enemy_remove_off_screen  # WIDE: the objects out, stopped and on the screen by t
 remove_off_screen
 stop_beyond_screen_edge
 enemy_on_screen
+enemy_wait_while_target_down    # WIDE: the enemies' moves 9 and 3 stop them past the wider screen's sides (a player's
+enemy_back_off                   # report, Sebas: "hay un enemigo ahí fijo"), not in them
+ninja_rush_leap          # WIDE: the leaping ninja bounces off the wider screen's sides, the clown on his ball hops on
+clown_on_ball_hop        # in them and Krusty's balloon, knocked up, bounces off them (not off the board's edges, in
+krusty_balloon_fly_up    # the picture's sides' sight)
 player_check_motion      # WIDE: the players to the wider screen's edges
 player_check_screen_edges
 player_run_all           # the Konami code's REPEAT CHARACTERS (same_character.c): a slot another character plays with

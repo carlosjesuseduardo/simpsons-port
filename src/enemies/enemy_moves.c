@@ -3,7 +3,7 @@
  *    Description: the moves an enemy's behaviour picks while it thinks
  *    Version:     0.1.0
  *    Created:     06-11-2026
- *    Modified:    11-11-2026
+ *    Modified:    14-11-2026
  *    Author:      Sebastian Toyos
  *
  *    The Simpsons (arcade, Konami 1991): the game's 053248 program decompiled into C by
@@ -1888,7 +1888,7 @@ uint16_t enemy_keep_distance_close_in(uint16_t object, uint16_t step_handlers)
 }
 
 /* Move 9: stands still while its target is down, stopped when off the screen. */
-void enemy_wait_while_target_down(uint16_t object, uint8_t step, uint16_t *p_step_handlers, uint32_t *p_left_caller)
+void CONSOLE_ORIGINAL(enemy_wait_while_target_down)(uint16_t object, uint8_t step, uint16_t *p_step_handlers, uint32_t *p_left_caller)
 {
 	uint16_t step_handlers = 0;
 	uint16_t enemy_x = 0;
@@ -2082,7 +2082,7 @@ void enemy_wait_while_target_down(uint16_t object, uint8_t step, uint16_t *p_ste
 
 /* Move 3: backs away from its target for 32 frames, then stands while its target is down, stopped when
    off the screen. */
-void enemy_back_off(uint16_t object, uint8_t step, uint16_t *p_step_handlers, uint32_t *p_left_caller)
+void CONSOLE_ORIGINAL(enemy_back_off)(uint16_t object, uint8_t step, uint16_t *p_step_handlers, uint32_t *p_left_caller)
 {
 	uint16_t step_handlers = 0;
 	uint16_t enemy_x = 0;
