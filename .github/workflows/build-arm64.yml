@@ -10,7 +10,9 @@ jobs:
           apt-get update
           apt-get install -y git cmake python3 build-essential pkg-config \
             libdrm-dev libgbm-dev libegl-dev libgles-dev libasound2-dev \
-            libudev-dev libx11-dev
+            libudev-dev libx11-dev libxext-dev libxcursor-dev libxi-dev \
+            libxrandr-dev libxss-dev libxfixes-dev libxinerama-dev \
+            libxkbcommon-dev
       - name: Baixar o projeto
         run: git clone --recursive https://github.com/cheviman/simpsons-port .
       - name: Compilar
