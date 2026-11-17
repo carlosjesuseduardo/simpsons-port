@@ -3,24 +3,21 @@ on: workflow_dispatch
 jobs:
   build:
     runs-on: ubuntu-24.04-arm
-    container: debian:bookworm
+    container: debian:trixie
     steps:
       - name: Instalar ferramentas
         run: |
           apt-get update
           apt-get install -y git cmake python3 build-essential pkg-config \
-            libdrm-dev libgbm-dev libegl-dev libgles-dev libasound2-dev \
-            libudev-dev libx11-dev libxext-dev libxcursor-dev libxi-dev \
-            libxrandr-dev libxss-dev libxfixes-dev libxinerama-dev \
-            libxkbcommon-dev
+            libsdl2-dev
       - name: Baixar o projeto
         run: git clone --recursive https://github.com/cheviman/simpsons-port .
       - name: Compilar
         run: |
-          cmake -S . -B build/cmake -DSIMPSONS_STATIC_SDL2=ON -DSIMPSONS_REFERENCE_TOOLS=OFF
+          cmake -S . -B build/cmake -DSIMPSONS_REFERENCE_TOOLS=OFF
           cmake --build build/cmake --config Release
       - name: Guardar o resultado
         uses: actions/upload-artifact@v4
         with:
-          name: simpsons-arm64
+          name: simpsons-arm64-sdl-sistema
           path: build/bin/
